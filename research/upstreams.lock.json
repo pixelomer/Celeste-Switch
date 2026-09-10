@@ -1,0 +1,56 @@
+{
+  "schema": 1,
+  "scope": "Pinned source API references; not a complete application build dependency lock",
+  "repositories": [
+    {
+      "path": "vanilla-coreifier",
+      "url": "https://github.com/Wartori54/VanillaCoreifier.git",
+      "commit": "813454c4453a90f3b9dd882e40b814e6646d1c1d"
+    },
+    {
+      "path": "everest",
+      "url": "https://github.com/EverestAPI/Everest.git",
+      "commit": "47d6a61fa918c17b8085b93b61ee59a7465968f8"
+    },
+    {
+      "path": "everest/external/MonoMod",
+      "url": "https://github.com/MonoMod/MonoMod.git",
+      "commit": "dfc30a1506d37fb88a2c2be004f525205f46a24c"
+    },
+    {
+      "path": "everest/external/NLua",
+      "url": "https://github.com/EverestAPI/NLua.git",
+      "commit": "b3524288712743fb2394dcf615d14d0dac3276e2"
+    },
+    {
+      "path": "mono-nx",
+      "url": "https://github.com/exelix11/mono-nx.git",
+      "commit": "fec057748af9121d5cf363e772e817908d57c191"
+    },
+    {
+      "path": "fna",
+      "url": "https://github.com/FNA-XNA/FNA.git",
+      "commit": "76b1aef1fd0fa913ac53726fab9d230291c15327"
+    },
+    {
+      "path": "fna3d",
+      "url": "https://github.com/FNA-XNA/FNA3D.git",
+      "commit": "77c8b26ad1d1576444e258b0d92fe10b7c975f95"
+    },
+    {
+      "path": "hl2-nx",
+      "url": "https://github.com/NaGaa95/hl2_nx.git",
+      "commit": "41e045ea275fcfae906009f165a6635725e9a08f"
+    },
+    {
+      "path": "monomod",
+      "url": "https://github.com/MonoMod/MonoMod.git",
+      "commit": "14b9f28a04f9281fb032cb1d1e2339305b734869"
+    }
+  ],
+  "notes": [
+    "Everest uses its pinned external/MonoMod; the separate monomod entry provides a version comparison.",
+    "FNA and FNA3D references require coherent managed/native build selection.",
+    "Keep Mono runtime, BCL and AOT compiler versions paired."
+  ]
+}

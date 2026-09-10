@@ -1,0 +1,2 @@
+dnfile==0.18.0
+pyelftools==0.33

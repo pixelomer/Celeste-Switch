@@ -1,0 +1,36 @@
+{
+  "game_version": "1.4.0.0",
+  "target_framework": ".NETFramework,Version=v4.5.2",
+  "fmod_binding_version": "1.10.14",
+  "fmod_binding_hex": "0x00011014",
+  "archives": [
+    {
+      "archive": "celeste-linux.zip",
+      "assemblies": {
+        "Celeste.exe": {
+          "sha256": "fd73f8a2311fa5737ded550cbad4b75c85b7686b36432f59185e940fcb65fcfe"
+        },
+        "Celeste.Content.dll": {
+          "sha256": "0b8d6195992c8970e8602bf48a7bf89104b83a98e34a07dc0c18d01581711d15"
+        },
+        "FNA.dll": {
+          "sha256": "00349b572636c0ed4c97d4e4f74344b3450160c42d4a6b52bcf5e0f2d5193a31"
+        }
+      }
+    },
+    {
+      "archive": "celeste-win-opengl.zip",
+      "assemblies": {
+        "Celeste.exe": {
+          "sha256": "fd73f8a2311fa5737ded550cbad4b75c85b7686b36432f59185e940fcb65fcfe"
+        },
+        "Celeste.Content.dll": {
+          "sha256": "0b8d6195992c8970e8602bf48a7bf89104b83a98e34a07dc0c18d01581711d15"
+        },
+        "FNA.dll": {
+          "sha256": "00349b572636c0ed4c97d4e4f74344b3450160c42d4a6b52bcf5e0f2d5193a31"
+        }
+      }
+    }
+  ]
+}
