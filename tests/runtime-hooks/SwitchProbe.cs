@@ -3,6 +3,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Reflection;
+using System.Runtime.Loader;
 using Mono.Cecil.Cil;
 using MonoMod.Cil;
 using MonoMod.Core.Platforms;
@@ -154,6 +156,47 @@ internal static unsafe class SwitchProbe
         Require(true, "delegate and UnmanagedCallersOnly callbacks under 64 compacting GCs");
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference RunModHandler(string path, string target)
+    {
+        var context = new AssemblyLoadContext(target, isCollectible: true);
+        var assembly = context.LoadFromAssemblyPath(path);
+        Require(assembly.GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>()!.FrameworkName == target, target + " assembly loaded");
+        var handler = assembly.GetType("OwnedHookFixture")!.GetMethod("WrapCompute")!
+            .CreateDelegate<Func<Func<int, int>, int, int>>();
+        var method = typeof(SwitchProbe).GetMethod("Compute", BindingFlags.Static | BindingFlags.NonPublic)!;
+        using (var hook = new Hook(method, handler))
+        {
+            Require(Compute(6) == 113, target + " mod handler calls host original");
+            GC.Collect(2, GCCollectionMode.Forced, true, true);
+            Require(Compute(6) == 113, target + " mod handler survives GC");
+        }
+        Require(Compute(6) == 13, target + " mod handler disposal restores host");
+        var weak = new WeakReference(context);
+        context.Unload();
+        return weak;
+    }
+
+    private static void ModHandlerChecks()
+    {
+        foreach (int version in new[] { 8, 9 })
+        {
+            string relative = $"net{version}.0/OwnedHookFixture.dll";
+            string path = "/switch/celeste-hook-probe/fixtures/" + relative;
+            byte[] data = System.IO.File.ReadAllBytes(path);
+            ulong hash = 14695981039346656037UL;
+            foreach (byte value in data) hash = unchecked((hash ^ value) * 1099511628211UL);
+            Console.WriteLine($"FIXTURE {relative} {data.Length} {hash:x16}");
+            var weak = RunModHandler(path, $".NETCoreApp,Version=v{version}.0");
+            for (int i = 0; weak.IsAlive && i < 20; ++i)
+            {
+                GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
+                Thread.Sleep(25);
+            }
+            Require(!weak.IsAlive, $"net{version} mod handler context unloads");
+        }
+    }
+
     public static int Main(string[] args)
     {
         try
@@ -223,6 +266,7 @@ internal static unsafe class SwitchProbe
             GC.Collect(2, GCCollectionMode.Forced, true, true);
             GC.WaitForPendingFinalizers();
             Require(true, "pending finalizers drained after hook disposal");
+            ModHandlerChecks();
             Console.WriteLine("END PASS Horizon hook gate");
             return 100;
         }

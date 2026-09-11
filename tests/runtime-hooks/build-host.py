@@ -37,7 +37,7 @@ refs = ''.join(f'<Reference Include="{escape(p.stem)}"><HintPath>{escape(str(p))
 subprocess.run(['dotnet','build','-c','Release'],cwd=d,check=True)
 for dll in closure.values(): shutil.copyfile(dll,d/'bin/Release/net10.0'/dll.name)
 command=['dotnet',str(d/'bin/Release/net10.0/Host.dll'),*[str(out/t/'bin/Release'/t/'OwnedHookFixture.dll') for t in ('net8.0','net9.0')]]
-manifest={'command':command,'control':os.environ.get('CELESTE_HOOK_CONTROL'),'diagnostic_wait':os.environ.get('CELESTE_HOOK_WAIT') == '1','source_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in here.iterdir() if p.is_file()},'dependency_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in closure.values()}}
+manifest={'command':command,'control':os.environ.get('CELESTE_HOOK_CONTROL'),'shape':os.environ.get('CELESTE_HOOK_SHAPE','collectible-target'),'diagnostic_wait':os.environ.get('CELESTE_HOOK_WAIT') == '1','source_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in here.iterdir() if p.is_file()},'dependency_sha256':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in closure.values()}}
 (out/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 with (out/'result.txt').open('w') as log: result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT)
 print((out/'result.txt').read_text());raise SystemExit(result.returncode)

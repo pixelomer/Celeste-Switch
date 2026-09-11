@@ -8,6 +8,35 @@ using MonoMod.RuntimeDetour;
 
 internal static class Program
 {
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int HostCompute(int value) => value + 7;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference RunModHandler(string path)
+    {
+        var context = new AssemblyLoadContext(path, isCollectible: true);
+        var assembly = context.LoadFromAssemblyPath(path);
+        Console.WriteLine($"LOAD handler {assembly.GetCustomAttribute<System.Runtime.Versioning.TargetFrameworkAttribute>()!.FrameworkName}");
+        var method = typeof(Program).GetMethod("HostCompute", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var handler = assembly.GetType("OwnedHookFixture")!.GetMethod("WrapCompute")!
+            .CreateDelegate<Func<Func<int, int>, int, int>>();
+        Equal(13, HostCompute(6));
+        if (Environment.GetEnvironmentVariable("CELESTE_HOOK_CONTROL") != "load-only")
+        {
+            using (var hook = new Hook(method, handler))
+            {
+                Equal(113, HostCompute(6));
+                GC.Collect(2, GCCollectionMode.Forced, true, true);
+                Equal(113, HostCompute(6));
+            }
+            Equal(13, HostCompute(6));
+            Console.WriteLine("PASS collectible mod handler on default-context host target/GC/disposal");
+        }
+        var weak = new WeakReference(context);
+        context.Unload();
+        return weak;
+    }
+
     private static void Equal(int expected, int actual)
     {
         if (expected != actual) throw new InvalidOperationException($"Expected {expected}; got {actual}");
@@ -62,7 +91,9 @@ internal static class Program
             bool failed = false;
             foreach (string path in args)
             {
-                var weak = Run(System.IO.Path.GetFullPath(path));
+                var fullPath = System.IO.Path.GetFullPath(path);
+                var weak = Environment.GetEnvironmentVariable("CELESTE_HOOK_SHAPE") == "mod-handler"
+                    ? RunModHandler(fullPath) : Run(fullPath);
                 for (int i = 0; weak.IsAlive && i < 20; ++i) {
                     GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
                     System.Threading.Thread.Sleep(25);

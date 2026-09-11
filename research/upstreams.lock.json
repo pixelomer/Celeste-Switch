@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "scope": "Pinned source API references; not a complete application build dependency lock",
+  "scope": "Pinned API references and Everest library source bundle; not a complete application build dependency lock",
   "repositories": [
     {
       "path": "vanilla-coreifier",
@@ -46,11 +46,52 @@
       "path": "monomod",
       "url": "https://github.com/MonoMod/MonoMod.git",
       "commit": "14b9f28a04f9281fb032cb1d1e2339305b734869"
+    },
+    {
+      "path": "everest/lib-ext",
+      "url": "https://github.com/EverestAPI/Everest-libs",
+      "commit": "591f7c12fcb4e8fda9ef5ef1b331b5ed40d3fb1f"
+    },
+    {
+      "path": "everest-libs-source",
+      "url": "https://github.com/EverestAPI/Everest-libs",
+      "commit": "3311fc976af2c8e630eb14d250dcedc516b93df8"
+    },
+    {
+      "path": "everest-libs-source/source/FNA",
+      "url": "https://github.com/FNA-XNA/FNA",
+      "commit": "a5920865ab28dcd9d27fca22e03f2658e804b07b"
+    },
+    {
+      "path": "everest-libs-source/source/FNA/lib/FNA3D",
+      "url": "https://github.com/FNA-XNA/FNA3D",
+      "commit": "2a6f8586c8d032da18f707eb340bfbef26d1ff8b"
+    },
+    {
+      "path": "everest-libs-source/source/FNA/lib/FNA3D/MojoShader",
+      "url": "https://github.com/icculus/mojoshader",
+      "commit": "26d3f1d3228900a7abb2ae57e613f3fb1916a627"
+    },
+    {
+      "path": "everest-libs-source/source/FNA/lib/FAudio",
+      "url": "https://github.com/FNA-XNA/FAudio",
+      "commit": "b2bf5b385bb0719f6afc12fd3636be14280f4fbb"
+    },
+    {
+      "path": "everest-libs-source/source/FNA/lib/Theorafile",
+      "url": "https://github.com/FNA-XNA/Theorafile",
+      "commit": "48d74afcbf838fe95ca56cec142efae07bb56f65"
+    },
+    {
+      "path": "everest-libs-source/source/FNA/lib/SDL2-CS",
+      "url": "https://github.com/flibitijibibo/SDL2-CS",
+      "commit": "1ef072adb1653d3e79fa99586ebcb1797a54caca"
     }
   ],
   "notes": [
     "Everest uses its pinned external/MonoMod; the separate monomod entry provides a version comparison.",
-    "FNA and FNA3D references require coherent managed/native build selection.",
+    "The everest-libs-source revision identifies the FNA/FNA3D 24.01 source pair, SDL2 bindings, FAudio, Theorafile and MojoShader submodules used by the listed lib-ext bundle.",
+    "Use the bundle's source patches and paired revisions when building native libraries; comparison FNA/FNA3D heads are not substitutes.",
     "Keep Mono runtime, BCL and AOT compiler versions paired."
   ]
 }

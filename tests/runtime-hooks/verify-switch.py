@@ -34,13 +34,34 @@ for file in (a.build / 'host/managed').glob('*.dll'):
     expected[file.name] = [len(data), f'{value:016x}']
 if set(expected) != set(manifest['managed_sha256']) or not expected or observed != expected:
     raise SystemExit('Target input checksums do not match local inputs')
+integration = json.loads((a.build / 'integration-manifest.json').read_text())
+fixture_hashes = integration.get('fixture_sha256', {})
+fixture_expected = {}
+fixture_observed = {}
+for relative, digest in fixture_hashes.items():
+    data = (a.build / 'host/fixtures' / relative).read_bytes()
+    if hashlib.sha256(data).hexdigest() != digest:
+        raise SystemExit('Fixture differs from build manifest: ' + relative)
+    value = 14695981039346656037
+    for byte in data:
+        value = ((value ^ byte) * 1099511628211) & 0xffffffffffffffff
+    fixture_expected[relative] = [len(data), f'{value:016x}']
+for line in stdout.splitlines():
+    if not line.startswith('FIXTURE '):
+        continue
+    match = re.fullmatch(r'FIXTURE (.+) (\d+) ([0-9a-f]{16})', line)
+    if not match or match[1] in fixture_observed:
+        raise SystemExit('Malformed or duplicate fixture record: ' + line)
+    fixture_observed[match[1]] = [int(match[2]), match[3]]
+if fixture_observed != fixture_expected:
+    raise SystemExit('Target fixture checksums do not match build inputs')
 if stderr or 'END FAIL' in stdout or 'END PASS Horizon hook gate' not in stdout:
     raise SystemExit('Probe failed or stderr is nonempty')
 for marker in ('coreclr_execute_assembly result=00000000 exit=100', 'coreclr_shutdown result=00000000 exit=100'):
     if marker not in runtime:
         raise SystemExit('Missing successful lifecycle marker: ' + marker)
 summary = {
-    'result': 'PASS', 'assembly_count': len(expected),
+    'result': 'PASS', 'assembly_count': len(expected), 'external_fixture_count': len(fixture_expected),
     'checks': [line[5:] for line in stdout.splitlines() if line.startswith('PASS ')],
     'target_integrity': 'FNV-1a-64 and length; not a cryptographic signature',
     'nro_sha256': hashlib.sha256((a.build / 'host/coreclr-host-probe.nro').read_bytes()).hexdigest(),

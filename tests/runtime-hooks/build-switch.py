@@ -6,7 +6,9 @@ p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('--runtime', type=Path, required=True)
 p.add_argument('--runtime-baseline', type=Path, required=True, help='Source tree containing matching .NET 10 BCL/CoreLib/SDK outputs')
 p.add_argument('--monomod', type=Path, required=True)
+p.add_argument('--monomod-framework', choices=['net8.0', 'net10.0'], default='net10.0')
 p.add_argument('--output', type=Path, required=True)
+p.add_argument('--fixture', action='append', required=True, help='Supply net8.0=PATH and net9.0=PATH for original assemblies loaded outside the trusted platform list')
 a = p.parse_args()
 here = Path(__file__).resolve().parent
 out = a.output.resolve()
@@ -20,7 +22,7 @@ for source in sources:
     obj = out/(source.stem+'.o')
     subprocess.run([str(compiler), '-march=armv8-a+crc+crypto', '-mtune=cortex-a57', '-mtp=soft', '-fPIE', '-O2', '-g', '-fexceptions', '-fno-omit-frame-pointer', '-I'+str(runtime/'src/coreclr/hosts/inc'), '-c', str(source), '-o', str(obj)], check=True)
     objects.append(obj)
-bin = monomod/'artifacts/sdk-compiler-control/bin/MonoMod.RuntimeDetour/release_net10.0'
+bin = monomod/('artifacts/sdk-compiler-control/bin/MonoMod.RuntimeDetour/release_' + a.monomod_framework)
 deps = json.loads((bin/'MonoMod.RuntimeDetour.deps.json').read_text())
 packages = Path(os.environ.get('NUGET_PACKAGES', str(Path.home()/'.nuget/packages')))
 closure = {}
@@ -46,3 +48,19 @@ def digest(path): return hashlib.sha256(path.read_bytes()).hexdigest()
     'runtime_revision': subprocess.check_output(['git','rev-parse','HEAD'],cwd=runtime,text=True).strip(),
     'monomod_revision': subprocess.check_output(['git','rev-parse','HEAD'],cwd=monomod,text=True).strip()},indent=2)+'\n')
 subprocess.run(command, check=True)
+fixtures = {}
+for item in a.fixture:
+    label, separator, name = item.partition('=')
+    if not separator or not label or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-' for c in label) or label in ('.', '..'):
+        raise SystemExit('Fixture must be LABEL=PATH with a plain label')
+    source = Path(name).resolve()
+    subprocess.run(['python3', str(runtime/'src/coreclr/pal/tests/libnx/host/validate-il.py'), str(source)], check=True)
+    relative = label + '/' + source.name
+    if relative in fixtures or source.suffix != '.dll': raise SystemExit('Duplicate or non-DLL fixture: '+relative)
+    destination = out/'host/fixtures'/relative
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(source.read_bytes())
+    fixtures[relative] = digest(destination)
+integration = json.loads((out/'integration-manifest.json').read_text())
+integration['fixture_sha256'] = fixtures
+(out/'integration-manifest.json').write_text(json.dumps(integration, indent=2)+'\n')

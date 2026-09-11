@@ -39,6 +39,8 @@ python3 tests/runtime-hooks/build-switch.py \
   --runtime third_party/hook-runtime \
   --runtime-baseline third_party/hook-runtime \
   --monomod third_party/hook-monomod \
+  --fixture net8.0=artifacts/runtime-hooks-host/net8.0/bin/Release/net8.0/OwnedHookFixture.dll \
+  --fixture net9.0=artifacts/runtime-hooks-host/net9.0/bin/Release/net9.0/OwnedHookFixture.dll \
   --output artifacts/runtime-hooks-switch
 ```
 
@@ -76,3 +78,25 @@ manifest, empty stderr, managed success and successful execute/shutdown markers.
 FNV is an integrity comparison, not authentication. The output JSON is replaced
 if it exists; preserve needed output first. Logs, manifests and binaries are
 generated data and must remain outside source history.
+
+## Collectible handler versus collectible target
+
+Set CELESTE_HOOK_SHAPE=mod-handler when invoking the desktop builder to load
+net8/net9 handlers in collectible contexts and hook a method owned by the
+default-context host. The default shape instead hooks a collectible target.
+Both retain their unload assertions: these are different lifetime contracts.
+CELESTE_HOOK_CONTROL=load-only remains available without weakening either check.
+
+Build the desktop fixtures first. The Horizon command above requires both
+original fixture DLLs, validates their IL format and copies them under
+host/fixtures. Install that directory as /switch/celeste-hook-probe/fixtures
+alongside the managed root. These assemblies deliberately stay outside the
+trusted platform list. The fixture checks their declared target frameworks,
+original calls, collections, hook disposal and unload; the verifier also
+compares their separate length/FNV and local SHA-256 records.
+
+For a net8 MonoMod library target, rebuild MonoMod.RuntimeDetour with -f net8.0
+using the same source, compiler options and artifacts path as the desktop recipe.
+Pass --monomod-framework net8.0 to the Horizon builder; use a fresh output
+directory. For the desktop builder, point --monomod at release_net8.0 instead
+of release_net10.0. The executing host and runtime remain .NET 10.
