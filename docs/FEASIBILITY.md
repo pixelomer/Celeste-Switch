@@ -2,9 +2,10 @@
 
 A Horizon host must preserve dynamic managed loading and runtime hooks, not
 just execute a closed set of ahead-of-time compiled assemblies. A Mono
-interpreter with a runtime-aware hook backend is one possible execution model;
-mixed AOT requires the same hook semantics. CoreCLR requires a Horizon PAL,
-executable-memory management, GC, threading and exception support.
+interpreter with a runtime-aware hook backend is an alternative execution model;
+mixed AOT requires the same hook semantics. The primary CoreCLR .NET 10 source
+and its version-specific MonoMod requirements are described in
+[runtime compatibility](RUNTIME_COMPATIBILITY.md).
 See [compatibility checks](ROADMAP.md) for the independent contracts.
 
 ## Input conversion

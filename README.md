@@ -4,7 +4,8 @@ This repository contains source tools and compatibility requirements for an
 independent homebrew host of the PC FNA version of Celeste and Everest.
 The metadata tools do not implement a playable port.
 
-See [hosting requirements](docs/FEASIBILITY.md) and
+See [.NET 10 runtime compatibility](docs/RUNTIME_COMPATIBILITY.md),
+[hosting requirements](docs/FEASIBILITY.md) and
 [compatibility checks](docs/ROADMAP.md).
 The [input contract](research/BASELINE.json) identifies supported PC assemblies;
 [source references](research/upstreams.lock.json) pin comparison sources,

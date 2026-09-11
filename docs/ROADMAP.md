@@ -6,7 +6,9 @@ input. Keep generated logs and inventories in ignored artifacts/.
 
 ## Managed execution and hooks
 
-Use a coherent runtime/BCL and pinned hook dependency set.
+Use the [.NET 10 CoreCLR hosting contract](RUNTIME_COMPATIBILITY.md) with a
+coherent runtime/BCL and pinned hook dependency set. Include net8/net9 IL fixtures
+to distinguish target-framework compatibility from the private hook-runtime ABI.
 
 - Load a second assembly from files and bytes; exercise generic and virtual
   calls, exceptions and collections under allocation pressure.
