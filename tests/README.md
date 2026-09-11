@@ -21,7 +21,7 @@ From the repository root, obtain the SDK-compiler-capable MonoMod source:
 
 ```sh
 git clone https://github.com/pixelomer/MonoMod.git third_party/hook-monomod
-git -C third_party/hook-monomod checkout --detach 4f6b755bf59ec9f2d062821a87eec12bd5d678a8
+git -C third_party/hook-monomod checkout --detach a57bbf1e45fe4e2cf4e94690f6687c51a1377136
 git -C third_party/hook-monomod submodule update --init external/iced
 (
   cd third_party/hook-monomod
