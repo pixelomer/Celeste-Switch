@@ -15,6 +15,6 @@ execute inspected binaries.
 
 Keep runtime, BCL, framework and MonoMod versions coherent. Preserve mod-visible
 APIs, dynamic loading and hook semantics; a fixed precompiled mod pack is not
-general Everest support. Document unsupported OS APIs explicitly.
+general Everest support. Mods must load normally from Mods/. Windows/native-specific limitations and unsupported OS APIs must be explicit.
 Use devkitA64 and libnx 4.10.0 or newer for Horizon 21+ TLS compatibility.
 Source-build and packaging commands must not deploy to or control a console.
