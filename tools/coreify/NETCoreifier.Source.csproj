@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>NETCoreifier</AssemblyName>
+    <LangVersion>11</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(EverestRoot)/NETCoreifier/**/*.cs" Exclude="$(EverestRoot)/NETCoreifier/**/obj/**;$(EverestRoot)/NETCoreifier/**/bin/**" />
+    <Reference Include="MonoMod.Patcher"><HintPath>$(MonoModBinaries)/MonoMod.Patcher.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>$(MonoModBinaries)/MonoMod.Utils.dll</HintPath></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>$(MonoModBinaries)/Mono.Cecil.dll</HintPath></Reference>
+  </ItemGroup>
+  <Target Name="CheckSourceInputs" BeforeTargets="PrepareForBuild">
+    <Error Condition="!Exists('$(EverestRoot)/NETCoreifier/Coreifier.cs')" Text="Set EverestRoot to the pinned Everest source checkout." />
+    <Error Condition="!Exists('$(MonoModBinaries)/MonoMod.Patcher.dll')" Text="Set MonoModBinaries to the reviewed net8 MonoMod.Patcher build output." />
+  </Target>
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>CelesteSwitch.Coreify</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Nullable>enable</Nullable>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <ProjectReference Include="NETCoreifier.Source.csproj" />
+    <Reference Include="Mono.Cecil"><HintPath>$(MonoModBinaries)/Mono.Cecil.dll</HintPath></Reference>
+    <Reference Include="MonoMod.Patcher"><HintPath>$(MonoModBinaries)/MonoMod.Patcher.dll</HintPath></Reference>
+  </ItemGroup>
+</Project>
