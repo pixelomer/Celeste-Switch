@@ -66,3 +66,18 @@ console configuration. Keep captured addresses, heaps, logs, maps, generated
 archives and any game data outside source history. A destination report locates
 an invalid write; it does not by itself identify the underlying driver or
 allocation defect.
+
+## Optional allocator correction
+
+Add --fix-allocator to the archive-building command above to apply the
+[checked Nouveau patch](../../native/mesa/nouveau-mm-failure.patch) to a second
+copied object. This requires exactly one matching allocator compile entry,
+the expected slab-failure source text and one nouveau_mm.c.o archive member.
+The builder preserves the upload check, adds a failure-only slab diagnostic,
+and records the patch/source/compiler inputs with the resulting archive.
+
+The compile entries must come from the same Mesa build working directory.
+Use the [paired allocator control recipe](../../native/mesa/README.md) to build
+original and fixed failure-injection NROs separately, and that guide's runtime
+requirements for optional host NV wrappers. None of these commands deploys a
+host, executes a fixture or demonstrates that a graphics workload will fit.

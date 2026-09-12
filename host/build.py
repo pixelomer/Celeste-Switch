@@ -8,6 +8,7 @@ for name in ('runtime','runtime-baseline','graphics-build','fmod-build','celeste
 p.add_argument('--prepared-fna',type=Path,help='Use the paired FNA already patched by the standard Everest installer')
 p.add_argument('--lua-build',type=Path,help='Pinned native Lua build for Everest')
 p.add_argument('--mesa-library',type=Path,help='Explicit replacement Mesa archive for graphics diagnostics; recorded separately')
+p.add_argument('--nvmap-diagnostics',action='store_true',help='Testing only: log failed NV allocation/map calls')
 p.add_argument('--managed-pool-mib',type=int,default=512,help='Shared GC/PAL data backing pool in MiB (64..2048); leaves native graphics/audio allocations separate')
 p.add_argument('--gc-region-mib',type=int,default=0,help='Optional upstream GCRegionRange override in MiB; zero retains runtime default')
 p.add_argument('--protected-managed-pool',action='store_true',help='Use opt-in Horizon data alias pool; virtual capacity equals backing size')
@@ -48,6 +49,7 @@ if a.lua_build:
  if sha(a.lua_build/'liblua54.a')!=lua['archive_sha256']:raise SystemExit('Changed Lua archive')
  archives.append(a.lua_build/'liblua54.a')
 for name in ('so_util.c','so_util.h','imports.inc'):shutil.copy2(a.fmod_build/name,snapshot/name)
+if a.nvmap_diagnostics:shutil.copy2(here.parent/'native/mesa/nv-diagnostics.c',snapshot/'nv-diagnostics.c')
 for path in (a.monomod/'native/libnx/exception-helper.c',a.monomod/'src/MonoMod.Core/Platforms/Architectures/arm64/exhelper_linux_macos_arm64.S',a.monomod/'src/MonoMod.Core/Platforms/Architectures/arm64/asm.i'):shutil.copy2(path,snapshot/path.name)
 sdk=None
 for line in (a.runtime/'artifacts/obj/coreclr/libnx.arm64.Release/coreclr-probe/CMakeCache.txt').read_text().splitlines():
@@ -65,6 +67,8 @@ for name in ('android','jni','runtime','output','so_util','imports'):
  obj=out/(name+'.o');run(['aarch64-none-elf-gcc',*flags,'-c',snapshot/(name+'.c'),'-o',obj]);objects.append(obj)
 for name in ('exception-helper.c','exhelper_linux_macos_arm64.S'):
  obj=out/(name+'.o');run(['aarch64-none-elf-gcc',*flags,'-c',snapshot/name,'-o',obj]);objects.append(obj)
+if a.nvmap_diagnostics:
+ obj=out/'nv-diagnostics.o';run(['aarch64-none-elf-gcc',*flags,'-c',snapshot/'nv-diagnostics.c','-o',obj]);objects.append(obj)
 archives.append(Path(subprocess.check_output(['aarch64-none-elf-gcc','-print-file-name=libpthread.a'],text=True).strip()).resolve())
 cmd=['python3',a.runtime/'src/coreclr/pal/tests/libnx/host/build.py','--probe','bcl','--output',out/'host','--corelib',a.runtime_baseline/'artifacts/bin/coreclr/libnx.arm64.Release/IL/System.Private.CoreLib.dll','--framework',a.runtime_baseline/'artifacts/bin/runtime/net10.0-libnx-Release-arm64','--dotnet-root',a.runtime_baseline/'.dotnet','--application-entry','Celeste.dll','--managed-reference',fna,'--managed-reference',a.celeste,'--managed-reference',a.content_assembly,'--watchdog-seconds','0','--managed-directory','/switch/celeste-pc','--log-prefix','/switch/celeste-pc']
 # Resolve the complete metadata reference closure, retaining the matching Horizon
@@ -97,6 +101,8 @@ while pending:
  assembly.close()
 for path in dependencies:cmd+=['--managed-reference',path]
 for obj in objects:cmd+=['--native-object',obj]
+if a.nvmap_diagnostics:
+ for symbol in ('nvioctlNvmap_Create','nvioctlNvmap_Alloc','nvAddressSpaceMap'):cmd+=['--wrap-symbol',symbol]
 for archive in archives:cmd+=['--native-library',archive]
 for symbol in json.loads((a.graphics_build/'imports.json').read_text())['resident_exports']:cmd+=['--export-symbol',symbol]
 for symbol in ('coreclr_libnx_get_jit','coreclr_libnx_jit_get_compile_callback','coreclr_libnx_jit_set_compile_callback','coreclr_libnx_memory_granularity','coreclr_libnx_memory_allocate','coreclr_libnx_memory_free','coreclr_libnx_memory_readable','coreclr_libnx_memory_patch','monomod_libnx_exception_helper'):cmd+=['--export-symbol',symbol]
@@ -105,6 +111,7 @@ if lua:
 run(cmd);shutil.copy2(out/'host/coreclr-host-probe.nro',out/'celeste-pc.nro')
 manifest={'prepared_fna_sha256':sha(fna),'lua_manifest_sha256':sha(a.lua_build/'manifest.json') if lua else None,'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(a.graphics_build/'host/build-manifest.json'),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
 manifest['managed_pool_mib']=a.managed_pool_mib
+manifest['nvmap_diagnostics']=a.nvmap_diagnostics
 manifest['mesa_override']={'path':str(a.mesa_library),'sha256':sha(a.mesa_library)} if a.mesa_library else None
 manifest['gc_region_mib']=a.gc_region_mib
 manifest['protected_managed_pool']=a.protected_managed_pool

@@ -1,0 +1,36 @@
+--- a/src/gallium/drivers/nouveau/nouveau_mm.c
++++ b/src/gallium/drivers/nouveau/nouveau_mm.c
+@@ -185,7 +185,12 @@
+       slab = LIST_ENTRY(struct mm_slab, bucket->used.next, head);
+    } else {
+       if (list_is_empty(&bucket->free)) {
+-         mm_slab_new(cache, MAX2(mm_get_order(size), MM_MIN_ORDER));
++         ret = mm_slab_new(cache, MAX2(mm_get_order(size), MM_MIN_ORDER));
++         if (ret) {
++            /* Leave the empty bucket intact; its list head is not a slab. */
++            *offset = 0;
++            return NULL;
++         }
+       }
+       slab = LIST_ENTRY(struct mm_slab, bucket->free.next, head);
+ 
+@@ -193,11 +198,17 @@
+       list_add(&slab->head, &bucket->used);
+    }
+ 
+-   *offset = mm_slab_alloc(slab) << slab->order;
+-
++   /* Allocate bookkeeping before consuming a slot so failure cannot leak it. */
+    alloc = MALLOC_STRUCT(nouveau_mm_allocation);
+    if (!alloc)
+       return NULL;
++
++   int slot = mm_slab_alloc(slab);
++   if (slot < 0) {
++      FREE(alloc);
++      return NULL;
++   }
++   *offset = (unsigned)slot << slab->order;
+ 
+    nouveau_bo_ref(slab->bo, bo);
+ 

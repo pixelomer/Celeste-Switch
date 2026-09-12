@@ -396,3 +396,13 @@ protected-pool flag separately in the integration manifest. For an optional
 instrumented archive, follow the [buffer diagnostic recipe](../tests/graphics-buffer-diagnostics/README.md).
 These controls do not change mod ZIPs or managed payloads, establish adequate
 memory for a workload, or claim successful graphics execution.
+
+## NV allocation and mapping diagnostics
+
+--nvmap-diagnostics compiles the local [NV wrappers](../native/mesa/nv-diagnostics.c)
+and selects three explicit linker wraps through the runtime host builder.
+Use the [Mesa integration guide](../native/mesa/README.md) for the exact
+wrapper-capable runtime revision, coherent source-build inputs, optional
+allocator patch and paired native controls. The flag is off by default and
+recorded in the generated integration manifest. Successful and failing driver
+calls retain their original results; this option only observes failure state.
