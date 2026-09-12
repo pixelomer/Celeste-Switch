@@ -16,6 +16,7 @@ extern void* PAL_GetProcAddressDirect(void*,const char*);
 extern int PAL_FreeLibraryDirect(void*);
 extern void* CelesteFmodResolve(const char*,const char*);
 extern unsigned __nx_nv_transfermem_size;
+extern char *fake_heap_start, *fake_heap_end;
 void* HostResolvePInvoke(const char *library,const char *entry){
     if(library && entry && !strcmp(library,"__Internal")) {
 #define EXPORT(name) if(!strcmp(entry,#name))return (void*)name
@@ -51,6 +52,9 @@ int HostConfigureApplication(void) {
     __nx_nv_transfermem_size = (unsigned)CELESTE_NV_TRANSFER_MIB << 20;
 #endif
     printf("HOST NV transfer memory=%u\n", __nx_nv_transfermem_size);
+    // libnx reserves the native heap up front; mallinfo's current arena is not
+    // the whole available heap. Report the actual loader/libnx-provided extent.
+    printf("HOST native heap extent=%zu\n", (size_t)(fake_heap_end - fake_heap_start));
     // Configure the existing shared allocator before CoreCLR/BCL initialize it.
     // This is physical data backing, separate from native graphics, audio and
     // executable-code allocations. The runtime's GC reads this actual capacity.

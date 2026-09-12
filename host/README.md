@@ -423,3 +423,11 @@ This budget is distinct from the shared managed backing, GC region, native
 graphics allocations and kernel mapping capacity. Changing it does not adjust
 CPU/GPU clocks or remove the need to account for other resource limits.
 Retain the existing protected/default-pool and driver failure behavior.
+
+## Native heap extent
+
+Startup also reports fake_heap_end - fake_heap_start from libnx's supplied
+native-heap bounds. This describes the heap extent, not live allocations,
+remaining allocatable bytes or the current malloc arena. Read it alongside,
+not interchangeably with, shared-pool capacity and native allocator statistics.
+The report does not change heap ownership, GC policy or the selected budgets.
