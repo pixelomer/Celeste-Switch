@@ -37,3 +37,6 @@ unsupported native/OS services separately.
 
 Keep logs, screenshots, runtime observations and inventories outside source
 history.
+
+Use the [paired runtime and hook input profile](../../host/README.md#ordinary-mod-compatibility-inputs-and-checks)
+for source preparation and integration contracts.

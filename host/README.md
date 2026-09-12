@@ -211,3 +211,93 @@ The host sets Everest's existing EVEREST_NO_ERRORLOG_ON_CRASH option to 1,
 suppressing an external desktop error-log viewer while retaining the error log.
 Do not treat that option as a successful game exit or suppress the underlying
 exception. Desktop process launching remains unsupported.
+
+## Ordinary mod compatibility inputs and checks
+
+This profile pairs the host with reservation-wide executable mapping and
+Everest's legacy-hook trampoline adapter. It defines source inputs and
+compatibility criteria, not recorded execution results or a general mod
+compatibility guarantee. Use unchanged ZIPs through ordinary Mods/ loading.
+
+### Pinned source inputs
+
+| Component | Source revision |
+| --- | --- |
+| CoreCLR runtime | [0eb1db137241efc858865dc1cc1ec7ea1136cf44](https://github.com/pixelomer/dotnet-runtime/tree/0eb1db137241efc858865dc1cc1ec7ea1136cf44) |
+| Compatible earlier managed-library baseline | [0159e182f138395199d3dc113171276563a57e57](https://github.com/pixelomer/dotnet-runtime/tree/0159e182f138395199d3dc113171276563a57e57) |
+| Everest | [3e41108ffc335329986a66a07dff4b7b97b1aef3](https://github.com/pixelomer/Everest/tree/3e41108ffc335329986a66a07dff4b7b97b1aef3) |
+| MonoMod | [a57bbf1e45fe4e2cf4e94690f6687c51a1377136](https://github.com/pixelomer/MonoMod/tree/a57bbf1e45fe4e2cf4e94690f6687c51a1377136) |
+| FNA | [2faf7f15f5622863348f64c057ef4b7dd2d9b839](https://github.com/pixelomer/FNA/tree/2faf7f15f5622863348f64c057ef4b7dd2d9b839) |
+| SDL2 | [53c56198d88a2c4b2c72b88b8621b413f9260ab6](https://github.com/pixelomer/SDL/tree/53c56198d88a2c4b2c72b88b8621b413f9260ab6) |
+| libnx | [1ad156340a015986ceaedaaf8fba602d7fea2730](https://github.com/pixelomer/libnx/tree/1ad156340a015986ceaedaaf8fba602d7fea2730) |
+
+Follow this guide's source-built input and standard Everest instructions above
+with these substitutions:
+
+- Select runtime 0eb1db137241efc858865dc1cc1ec7ea1136cf44 when cloning
+  third_party/host-runtime, instead of the earlier direct-entry revision.
+  Follow the [runtime host guide at that revision](https://github.com/pixelomer/dotnet-runtime/blob/0eb1db137241efc858865dc1cc1ec7ea1136cf44/src/coreclr/pal/tests/libnx/host/README.md)
+  and its linked thread/context instructions to stage libnx, build native
+  CoreCLR, IL CoreLib, libs.sfx, the source SDK and ICU.
+- For a fresh build, both --runtime and --runtime-baseline name that same
+  complete third_party/host-runtime source/build tree. The earlier baseline
+  above identifies the same src/libraries and src/coreclr/System.Private.CoreLib
+  source trees; it is not an unexplained prebuilt BCL requirement. Build the
+  complete matching framework from source rather than mixing deployed DLLs.
+- In the [standard Everest preparation recipe](../tools/prepare-everest/README.md),
+  select Everest 3e41108ffc335329986a66a07dff4b7b97b1aef3 instead of
+  7f6e694f7466b330d8bb0de4715926e11dc84a58. Keep its recursive submodules,
+  paired MonoMod, SDK 10.0.111/Roslyn build properties and both source publish
+  commands. Run the standard installer only on the dedicated user-owned copy.
+- FNA and SDL retain the host recipe's pins. Use the staged libnx revision
+  above for the runtime, SDL and other native inputs. The runtime's linked
+  thread recipe already selects it. Preserve the graphics recipe's separately
+  pinned FNA3D/MojoShader/Mesa inputs and the exact FMOD 1.10.14 adapters.
+- Build Lua and the host using the complete new standard-installer output,
+  including its patched Celeste/FNA and matching dependencies. The host's
+  standard-Everest command remains applicable; no fixed mod set is injected.
+
+Use fresh ignored source/output directories, or preserve existing generated
+outputs before rebuilding. Keep original game data, converted assemblies,
+FMOD SDKs/banks, build products and logs out of source history and release
+assets. Preparation and compilation do not establish gameplay compatibility.
+
+### Integration contracts
+
+The runtime maps an executable reservation once, initially inaccessible, and
+enables its committed pages. Its [executable-memory fixture](https://github.com/pixelomer/dotnet-runtime/blob/0eb1db137241efc858865dc1cc1ec7ea1136cf44/src/coreclr/pal/tests/libnx/executable-memory/README.md)
+covers page commitment, permissions, release and rollback without turning
+finite mapping capacity into a claim of unlimited mod headroom.
+
+Everest resolves NextTrampoline through IHook with the older IDetour fallback.
+The [legacy-detour fixture](../tests/legacy-detour/README.md) checks redirection,
+original calls, undo, reapply and disposal without invoking the game entry.
+The shared adapter is the integration boundary; do not patch individual mod
+ZIPs to work around its interface.
+
+The selected Everest disables the external shared-memory autosplitter on
+Horizon. The host supplies application-local TMPDIR and suppresses the external
+desktop crash viewer, not error logging. Unsupported OS/native services must
+remain explicit failures; these settings do not add IPC or desktop process
+support.
+
+### Observable criteria and limits
+
+Select packages using the [mod compatibility guide](../tests/mods/README.md).
+Check packages individually before assessing combinations:
+
+Check hook-driven behavior, rendering, settings persistence after restart,
+and restoration of changed options without losing unrelated game state.
+
+Preserve saves and unrelated mod settings before changing them. Inspect module
+loading, visible behavior, settings and errors together. Everest's entry
+implementation calls Environment.Exit(0), including after handled boot errors:
+a zero native exit is neither proof of compatibility nor a return through
+coreclr_shutdown.
+
+These criteria do not establish hot-unload support, full chapter coverage,
+stable frame timing, large-pack memory capacity, acoustic output correctness,
+arbitrary native dependencies or online/TLS support. Assess those separately
+using the [broader compatibility criteria](../docs/ROADMAP.md). Keep captured
+observations outside Git; do not present a source inventory as an execution
+result.

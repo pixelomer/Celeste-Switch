@@ -92,3 +92,5 @@ Preserve third-party licenses and source origins.
 
 Optional [ordinary mod package fixtures](tests/mods/README.md) provide pinned
 external inputs and observable compatibility checks through normal Mods/ loading.
+
+For the ordinary mod package set, use the [paired runtime and hook input profile](host/README.md#ordinary-mod-compatibility-inputs-and-checks).
