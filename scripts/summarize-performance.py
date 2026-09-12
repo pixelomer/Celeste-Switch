@@ -8,7 +8,10 @@ from pathlib import Path
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('directory', type=Path)
 a = p.parse_args()
-records = [json.loads(v.read_text()) for v in sorted(a.directory.glob('*.json'))]
+records = []
+for path in sorted(a.directory.glob('*.json')):
+    value = json.loads(path.read_text())
+    records.extend(value if isinstance(value, list) else [value])
 starts = [v for v in records if v.get('kind') == 'start']
 if len(starts) != 1: p.error('Expected exactly one run start record')
 frequency = starts[0]['frequency']

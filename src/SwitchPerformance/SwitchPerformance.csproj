@@ -12,6 +12,8 @@
     <Reference Include="Celeste"><HintPath>$(PreparedInstall)/Celeste.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="FNA"><HintPath>$(PreparedInstall)/FNA.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="MonoMod.RuntimeDetour"><HintPath>$(PreparedInstall)/MonoMod.RuntimeDetour.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="MonoMod.Utils"><HintPath>$(PreparedInstall)/MonoMod.Utils.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Mono.Cecil"><HintPath>$(PreparedInstall)/Mono.Cecil.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
   <Target Name="RequireLocalGame" BeforeTargets="ResolveReferences">
     <Error Condition="!Exists('$(PreparedInstall)/Celeste.dll')" Text="Set PreparedInstall to your locally prepared Everest installation." />

@@ -40,7 +40,10 @@ the diagnostic package.
 
 ## Records and interpretation
 
-Records are closed JSON objects in performance/RUN/ under the game directory.
+Records are closed JSON arrays in performance/RUN/ under the game directory.
+The writer batches up to 64 records or a two-second deadline, with timed queue
+polling, before closing a file. The summarizer accepts arrays and earlier
+individual-object records.
 A background writer consumes a bounded queue; enqueue failure increments the
 dropped counter instead of waiting for capacity. Logging, snapshots and hooks
 still have overhead. Hook failures, snapshot failures and dropped records are
@@ -58,6 +61,19 @@ Histograms have 128 quarter-millisecond bins with overflow at 31.75 ms.
 Count, total and maximum are recorded separately; do not infer sub-bin precision
 or an exact percentile from the histogram. See the
 [measurement method](../../docs/PERFORMANCE_INVESTIGATION.md) for comparison scope.
+
+## Sparse entity sampling
+
+One in 120 Engine update/draw calls samples the existing EntityList virtual
+Update/Render call site. Other calls retain the original virtual call after a
+conditional branch. Sampling still invokes the entity method once, preserving
+its hook chain; it does not skip entity work. Missing or ambiguous IL patterns
+produce a failed-hook record instead of a guessed insertion.
+
+Samples group inclusive cost by concrete entity type. Parent/child calls can
+overlap, and observer/JIT costs require separate consideration. The profiler
+also measures gameplay, lighting and backdrop renderer stages. Unload disposes
+the sampling IL hooks as well as the ordinary timing hooks.
 
 ## Summarize one run
 

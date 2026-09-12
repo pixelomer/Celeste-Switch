@@ -10,7 +10,7 @@ using MonoMod.RuntimeDetour;
 
 namespace SwitchPerformance;
 
-public sealed class PerformanceModule : EverestModule {
+public sealed partial class PerformanceModule : EverestModule {
     private const BindingFlags Methods = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
     private readonly List<Hook> hooks = new();
     private readonly List<Meter> meters = new();
@@ -45,6 +45,11 @@ public sealed class PerformanceModule : EverestModule {
         TimedVoid<Level>("Level.BeforeRender", "BeforeRender");
         TimedVoid<Scene>("Scene.Update", "Update");
         TimedVoid<EntityList>("EntityList.Update", "Update");
+        InstallEntitySampling();
+        TimedScene<GameplayRenderer>("Render");
+        TimedScene<LightingRenderer>("BeforeRender");
+        TimedScene<LightingRenderer>("Render");
+        TimedScene<BackdropRenderer>("Render");
         TimedVoid<VirtualTexture>("VirtualTexture.Reload", "Reload");
         var checksums = NewMeter("Everest.GetChecksum(path)");
         Add(typeof(Everest).GetMethod("GetChecksum", Methods, null, new[] { typeof(string) }, null),
@@ -96,7 +101,15 @@ public sealed class PerformanceModule : EverestModule {
         var meter = NewMeter(label);
         Add(typeof(T).GetMethod(method, Methods, null, new[] { typeof(GameTime) }, null),
             (Action<Action<T, GameTime>, T, GameTime>)((orig, self, time) => {
-                long start = meter.Start(); try { orig(self, time); } finally { meter.Stop(start); }
+                bool update = label == "Engine.Update";
+                if (update) SampleUpdate = ++updateNumber % 120 == 0;
+                else SampleRender = ++drawNumber % 120 == 0;
+                if (update && SampleUpdate) sampledUpdates++;
+                if (!update && SampleRender) sampledDraws++;
+                long start = meter.Start(); try { orig(self, time); } finally {
+                    meter.Stop(start);
+                    if (update) SampleUpdate = false; else SampleRender = false;
+                }
             }), label);
     }
     private void Add(MethodInfo? method, Delegate handler, string label) {
@@ -119,7 +132,11 @@ public sealed class PerformanceModule : EverestModule {
             entities = scene?.Entities.Count, gc0 = GC.CollectionCount(0), gc1 = GC.CollectionCount(1),
             gc2 = GC.CollectionCount(2), heapBytes = GC.GetTotalMemory(false),
             allocatedBytes = GC.GetTotalAllocatedBytes(false), gcPauseTicks = GC.GetTotalPauseDuration().Ticks,
-            meters = meters.Select(m => m.Snapshot()).ToArray(), dropped = Interlocked.Read(ref dropped) });
+            meters = meters.Select(m => m.Snapshot()).ToArray(),
+            entitySamples = entityMeters.Values.Where(m => m.HasSamples).Select(m => m.Snapshot()).ToArray(),
+            sampledUpdates, sampledDraws,
+            dropped = Interlocked.Read(ref dropped) });
+        sampledUpdates = sampledDraws = 0;
         contextStart = context; windowStart = now; nextWindow = now + Stopwatch.Frequency * 10;
     }
     private void Emit(object record) {
@@ -130,10 +147,16 @@ public sealed class PerformanceModule : EverestModule {
     private void WriteRecords() {
         int index = 0;
         try {
-            foreach (object record in output.GetConsumingEnumerable()) {
-                // Close each record so readers can inspect a completed file.
+            while (!output.IsCompleted) {
+                if (!output.TryTake(out object? first, 1000)) continue;
+                var batch = new List<object> { first };
+                long deadline = Stopwatch.GetTimestamp() + Stopwatch.Frequency * 2;
+                while (batch.Count < 64 && !output.IsCompleted && Stopwatch.GetTimestamp() < deadline) {
+                    if (output.TryTake(out object? more, 100)) batch.Add(more);
+                }
+                // Batch startup records, then close the completed JSON array.
                 string path = Path.Combine(directory, (index++).ToString("D6") + ".json");
-                File.WriteAllText(path, JsonSerializer.Serialize(record));
+                File.WriteAllText(path, JsonSerializer.Serialize(batch));
             }
         } catch (Exception e) {
             Interlocked.Increment(ref dropped);
@@ -141,6 +164,8 @@ public sealed class PerformanceModule : EverestModule {
         }
     }
     public override void Unload() {
+        foreach (var hook in entityHooks) hook.Dispose();
+        entityHooks.Clear();
         foreach (Hook hook in Enumerable.Reverse(hooks)) hook.Dispose();
         hooks.Clear();
         if (!stopped) {

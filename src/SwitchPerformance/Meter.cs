@@ -6,6 +6,7 @@ namespace SwitchPerformance;
 internal sealed class Meter(string name) {
     private long count, ticks, maximum;
     private readonly long[] histogram = new long[128];
+    internal bool HasSamples => Volatile.Read(ref count) != 0;
     internal long Start() => Stopwatch.GetTimestamp();
     internal void Stop(long start) {
         long elapsed = Stopwatch.GetTimestamp() - start;
