@@ -59,6 +59,7 @@ public sealed partial class PerformanceModule : EverestModule {
         TimedScene<LightingRenderer>("Render");
         TimedScene<BackdropRenderer>("Render");
         TimedVoid<Microsoft.Xna.Framework.Graphics.SpriteBatch>("SpriteBatch.FlushBatch", "FlushBatch");
+        InstallSpriteBatchStages();
         TimedVoid<VirtualTexture>("VirtualTexture.Reload", "Reload");
         InstallChecksumBuffering();
         InstallChecksumHook(true);

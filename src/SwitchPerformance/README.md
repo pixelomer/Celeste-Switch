@@ -145,3 +145,17 @@ still cover the full supplied run. A collector delta can use the immediately
 preceding record outside the selected bounds if its timestamps are contiguous.
 Choose bounds from the actual run; the tool does not determine stable workload
 conditions or validate the ordering of the two requested bounds.
+
+## Sprite-batch diagnostic stages
+
+With Diagnostics enabled, the profiler adds PrepRenderState, UpdateVertexBuffer
+and DrawPrimitives timers to the existing FlushBatch meter. The wrappers forward
+the same texture, start and count arguments and retain the upload method's return
+value. These private FNA hook signatures correspond to the paired source-built
+FNA input, not arbitrary future framework versions.
+
+The timers distinguish state setup, vertex upload and texture-run submission,
+but remain inclusive method durations with observer overhead. They do not
+measure isolated GPU execution, change sorting/batching, skip simulation updates
+or prune other mods' hooks. Preserve sprite order, texture lifetime and effect
+semantics when assessing any future rendering change.
