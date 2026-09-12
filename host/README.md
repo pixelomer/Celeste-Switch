@@ -6,6 +6,28 @@ and preference directory, preserving the game's entry-assembly identity.
 It links the paired FNA/FNA3D/SDL/OpenGL stack and exact FMOD 1.10.14 adapters.
 It does not replace game logic or inject a mod collection.
 
+## Automatic source build
+
+The normal installation entry point is the repository-root build.py; see
+[BUILDING.md](../docs/BUILDING.md). It obtains all inputs from sources.lock.json,
+builds the runtime's matching framework/ICU/libnx overlay and native libraries,
+runs standard local game preparation, and packages a new SD installation.
+It uses 1536 MiB protected managed backing, 1280 MiB GC region and 32 MiB NV
+transfer memory. These are explicit application budgets, not a measured capacity
+or performance guarantee; native graphics/audio and executable backing are separate.
+
+This lower-level builder also accepts graphics/manifest.json from the automatic
+source pipeline, retaining compatibility with the focused graphics fixture's
+host/build-manifest.json. It validates the selected native archives before any
+optional Mesa replacement and records the actual selected manifest identity.
+JDK includes come from JAVA_HOME or javac, while portlibs come from DEVKITPRO.
+
+The explicit source profiles below remain useful for embedding and focused
+fixtures. They select their own coherent inputs; do not mix their runtime or
+framework files with outputs from the automatic lock. The builder does not
+launch or control a console. Target startup and mod behavior require separate
+assessment; a zero native exit can also follow a game-caught exception.
+
 ## Source-built inputs
 
 Use the Linux toolchain, Python packages, SDK and source-built native graphics

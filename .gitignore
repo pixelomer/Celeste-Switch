@@ -33,3 +33,7 @@ __pycache__/
 .venv/
 *creds*
 *login.json
+
+# Horizon source builds
+/artifacts/
+**/__pycache__/

@@ -40,3 +40,13 @@ exercises FNA rendering and asynchronous FMOD callbacks through the user's
 converted game assembly without invoking its entry point. The synchronous
 native fixture and managed fixture cover different contracts; neither alone
 establishes full game, mod, docking or extended audio-lifecycle compatibility.
+
+## Source-build preparation
+
+The normal root build invokes `prepare.py` with the user's exact
+`fmodstudioapi11014android.tar.gz`. It verifies the archive hash and API version,
+extracts only required headers and ARM64 libraries into ignored output, fetches
+the reviewed MIT loader source, and generates the explicit import table. The
+Linux SDK is only needed for the retained desktop audio controls, not the game
+installation build. Prepared SDK material must remain local. No FMOD account
+credentials are read by these scripts.

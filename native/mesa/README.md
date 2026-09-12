@@ -78,3 +78,18 @@ The application builder compiles the wrapper source, selects exactly those
 three linker wraps and records the flag in its manifest. Normal builds omit
 the wrappers. Use the same target SDK/ABI for all native objects, and retain
 failures and generated diagnostics outside source history.
+
+## Standalone source build
+
+`python3 native/mesa/build.py --libnx /path/to/built/libnx --output artifacts/mesa`
+fetches checksum-pinned Mesa and devkitPro package patches, applies the retained
+GL worker/newlib compatibility changes and the allocator correction, then builds
+the entire archive together. Requires devkitPro portlibs, Meson, Ninja, Python
+Mako, Bison and Flex. The library and manifest are in the selected output.
+
+patch-mesa-thread.py is shared with the original homebrew integration in
+[Celeste64-Switch](https://github.com/pixelomer/Celeste64-Switch/blob/36848976a39ec97ffebcb303ea1428f1a727f980/src/celeste64-switch/renderer/patch-mesa-thread.py),
+revision 36848976a39ec97ffebcb303ea1428f1a727f980. It uses public Mesa/libnx
+interfaces. Mesa's upstream source license notices remain in the fetched source.
+The historical CELESTE64_MESA_THREAD environment variable is intentionally kept;
+the Celeste host does not enable that optional GL worker.

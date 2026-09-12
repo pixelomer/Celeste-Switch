@@ -10,7 +10,7 @@ namespace SwitchPerformance;
 public sealed class PerformanceSettings : EverestModuleSettings {
     public bool Diagnostics { get; set; }
     public bool DetailedEntities { get; set; } = true;
-    public bool BufferChecksums { get; set; }
+    public bool BufferChecksums { get; set; } = true;
 }
 
 public sealed partial class PerformanceModule {

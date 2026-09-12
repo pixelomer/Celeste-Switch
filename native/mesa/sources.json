@@ -1,0 +1,18 @@
+{
+  "mesa-20.1.0-rc3.tar.xz": {
+    "url": "https://archive.mesa3d.org/older-versions/20.x/mesa-20.1.0-rc3.tar.xz",
+    "sha256": "c90b75ea34302ebde9b81b87c5642fa864c40fe9c4ad34ce0793170c1413168d"
+  },
+  "switch-mesa-20.1.0-5.patch": {
+    "url": "https://raw.githubusercontent.com/devkitPro/pacman-packages/master/switch/mesa/switch-mesa-20.1.0-5.patch",
+    "sha256": "950f93d3e5b6ae9c5a42c2918623fe9a80d7ee398d92d2e73abec86b62d75916"
+  },
+  "gl_XML.py.patch": {
+    "url": "https://raw.githubusercontent.com/devkitPro/pacman-packages/master/switch/mesa/gl_XML.py.patch",
+    "sha256": "a9bc326195b3fe29709e079466a8b2162a2ac9409f694eaad5494490155e2dd4"
+  },
+  "glX_XML.py.patch": {
+    "url": "https://raw.githubusercontent.com/devkitPro/pacman-packages/master/switch/mesa/glX_XML.py.patch",
+    "sha256": "1475defcdf8600690eaddeee28d8f01310635c1273fb541f668e8789714d36ca"
+  }
+}

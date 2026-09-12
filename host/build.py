@@ -31,7 +31,9 @@ fm=json.loads((a.fmod_build/'build-manifest.json').read_text())
 if fm['fmod_version']!='1.10.14' or fm['output_api']!=3:raise SystemExit('Wrong FMOD input version')
 for name,digest in fm['sdk_files'].items():
  if sha(a.fmod_build/'sdk'/name)!=digest:raise SystemExit('Changed SDK input: '+name)
-graphics=json.loads((a.graphics_build/'host/build-manifest.json').read_text())
+graphics_manifest=a.graphics_build/'manifest.json'
+if not graphics_manifest.is_file():graphics_manifest=a.graphics_build/'host/build-manifest.json'
+graphics=json.loads(graphics_manifest.read_text())
 archives=[]
 for name,digest in graphics['native_libraries'].items():
  path=Path(name)
@@ -59,7 +61,11 @@ for line in (a.runtime/'artifacts/obj/coreclr/libnx.arm64.Release/coreclr-probe/
 if sdk is None:raise SystemExit('Missing runtime SDK')
 commands=[]
 def run(cmd):commands.append(list(map(str,cmd)));subprocess.run(commands[-1],check=True)
-flags=['-O2','-g','-fexceptions','-fno-omit-frame-pointer',f'-I{a.runtime}/src/coreclr/hosts/inc','-march=armv8-a+crc+crypto','-mtune=cortex-a57','-mtp=soft','-fPIE','-D__SWITCH__','-D_GNU_SOURCE','-DFMOD_PROBE_RELEASE','-DFMOD_ADAPTER_MIN_STACK=1572864','-DCELESTE_FMOD_LIBRARY_DIR="sdmc:/switch/celeste-pc/lib"',f'-I{snapshot}',f'-I{a.fmod_build}/sdk/inc',f'-I{sdk}/include','-I/opt/devkitpro/portlibs/switch/include',f'-I{Path(os.environ["JAVA_HOME"]).resolve()}/include',f'-I{Path(os.environ["JAVA_HOME"]).resolve()}/include/linux','-Werror=incompatible-pointer-types','-Werror=implicit-function-declaration']
+dkp=Path(os.environ.get('DEVKITPRO','/opt/devkitpro'))
+javac=shutil.which('javac')
+java=Path(os.environ['JAVA_HOME']) if os.environ.get('JAVA_HOME') else (Path(javac).resolve().parents[1] if javac else None)
+if java is None or not (java/'include/jni.h').is_file():raise SystemExit('Install a JDK or set JAVA_HOME to its root')
+flags=['-O2','-g','-fexceptions','-fno-omit-frame-pointer',f'-I{a.runtime}/src/coreclr/hosts/inc','-march=armv8-a+crc+crypto','-mtune=cortex-a57','-mtp=soft','-fPIE','-D__SWITCH__','-D_GNU_SOURCE','-DFMOD_PROBE_RELEASE','-DFMOD_ADAPTER_MIN_STACK=1572864','-DCELESTE_FMOD_LIBRARY_DIR="sdmc:/switch/celeste-pc/lib"',f'-I{snapshot}',f'-I{a.fmod_build}/sdk/inc',f'-I{sdk}/include',f'-I{dkp}/portlibs/switch/include',f'-I{java}/include',f'-I{java}/include/linux','-Werror=incompatible-pointer-types','-Werror=implicit-function-declaration']
 flags += [f'-I{a.runtime}/src/native/libs/Common',f'-DCELESTE_MANAGED_POOL_MIB={a.managed_pool_mib}']
 flags.append(f'-DCELESTE_GC_REGION_MIB={a.gc_region_mib}')
 flags.append(f'-DCELESTE_PROTECTED_MANAGED_POOL={int(a.protected_managed_pool)}')
@@ -112,7 +118,7 @@ for symbol in ('coreclr_libnx_get_jit','coreclr_libnx_jit_get_compile_callback',
 if lua:
  for symbol in lua['exports']:cmd+=['--export-symbol',symbol]
 run(cmd);shutil.copy2(out/'host/coreclr-host-probe.nro',out/'celeste-pc.nro')
-manifest={'prepared_fna_sha256':sha(fna),'lua_manifest_sha256':sha(a.lua_build/'manifest.json') if lua else None,'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(a.graphics_build/'host/build-manifest.json'),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
+manifest={'prepared_fna_sha256':sha(fna),'lua_manifest_sha256':sha(a.lua_build/'manifest.json') if lua else None,'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(graphics_manifest),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
 manifest['managed_pool_mib']=a.managed_pool_mib
 manifest['nvmap_diagnostics']=a.nvmap_diagnostics
 manifest['nv_transfer_mib']=a.nv_transfer_mib

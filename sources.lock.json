@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "runtime_revision": "b115efe03395844de50f643c96ea99f30a2ee11c",
+  "repositories": {
+    "dotnet-switch": {
+      "url": "https://github.com/pixelomer/dotnet-switch.git",
+      "revision": "8eaaca7a2c1e10455bf52f64423c00bd16a736f0"
+    },
+    "FNA": {
+      "url": "https://github.com/pixelomer/FNA.git",
+      "revision": "80e669afb5807cfdb3119f7b2e68c68f287239fc"
+    },
+    "Everest": {
+      "url": "https://github.com/pixelomer/Everest.git",
+      "revision": "ca39ba705afd616fc7852e6f76f8a21af7013d97"
+    },
+    "SDL": {
+      "url": "https://github.com/pixelomer/SDL.git",
+      "revision": "5b0a281f0b1b76084bae53f1ee5f78b6ef8be904"
+    },
+    "lua": {
+      "url": "https://github.com/NLua/lua.git",
+      "revision": "995a493cbbcaadceab6b080cd23d8555e7747efa"
+    }
+  }
+}

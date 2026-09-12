@@ -1,10 +1,15 @@
 # Prepare a separate game copy with standard Everest
 
-run.py combines the user's Linux PC ZIP, source-built Everest publish output,
+run.py combines a supported user-owned Linux or Windows FNA PC ZIP,
+source-built Everest publish output,
 source-built MiniInstaller and paired source-built FNA in a new staging copy.
 It invokes the ordinary MiniInstaller with no application arguments.
 No fixed mod set is injected and the game entry point is not invoked.
 The resulting Mods/ directory remains the ordinary installation interface.
+
+The [automatic installation build](../../docs/BUILDING.md) supplies these inputs
+from its current source lock. The explicit recipe below is also used by focused
+embedding/compatibility fixtures, whose guides substitute their paired revisions.
 
 ## Source-built Everest and installer inputs
 
@@ -57,20 +62,19 @@ It supplies the installer's FNA patch step, not a copied SDK binding implementat
 
 ## Isolated local preparation
 
-Install util-linux setpriv and bubblewrap. The runner requires root initially
-to assign its new install tree to UID/GID 65534, then executes MiniInstaller
-under that unprivileged identity with cleared groups, no-new-privileges and
-no network. Use a Linux build container/environment that supports the required
+Install bubblewrap and util-linux setpriv. Ordinary users run directly; root
+invocation assigns the new install tree to UID/GID 65534 and drops to that
+identity with cleared groups and no-new-privileges before MiniInstaller runs.
+Preparation has no network. Use a Linux build environment supporting the required
 namespaces and exposes its dotnet host at /usr/bin/dotnet, with runtime files
 under /usr. The sandbox mounts /usr and /proc read-only, supplies /dev and
 temporary /tmp, and gives write access to the separate /install tree.
 The runner sets DOTNET_ROLL_FORWARD=LatestMajor; the installed compatible
 desktop runtime may be newer than the projects' net8.0 target.
 
-Ensure UID/GID 65534 can traverse the dedicated output parent. Do not broaden
-permissions on unrelated input directories. Inputs are copied into the new
-tree before the installer runs; the runner's privilege requirement is not a
-reason to execute game code as root.
+For root invocation, ensure UID/GID 65534 can traverse the dedicated output
+parent. Do not broaden unrelated directory permissions. Inputs are copied into
+the new tree before installation; do not execute proprietary inputs as root.
 
 In that environment, from this repository root:
 
@@ -86,7 +90,9 @@ python3 tools/prepare-everest/run.py \
 The output directory must be new. The runner reads exactly Celeste.exe,
 Celeste.Content.dll and FNA.dll from the ZIP, plus their optional supported
 .config files; it does not extract the full game Content/ tree.
-Use the supported [PC input contract](../../research/BASELINE.json).
+It rejects duplicate or oversized selected members and checks all three managed
+assembly digests against the supported [PC input contract](../../research/BASELINE.json)
+before invoking the installer. It is not a full Content archive validator.
 It installs into output/install, with an empty Content/ directory for
 preparation, and supplies the selected source-built FNA in everest-lib/.
 The isolated directory is named /install, not the upstream updater directory,

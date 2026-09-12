@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build only the original diagnostic mod; game references remain local inputs."""
+"""Build the removable checksum optimization and optional diagnostics mod."""
 import argparse
 import hashlib
 import json

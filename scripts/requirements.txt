@@ -1,2 +1,4 @@
 dnfile==0.18.0
 pyelftools==0.33
+
+Mako==1.4.1

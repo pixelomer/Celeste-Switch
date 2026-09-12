@@ -56,3 +56,9 @@ accepts --lua-build artifacts/lua, verifies the archive digest, retains its
 exports and resolves the ordinary lua54 P/Invoke name from the resident image.
 Keep this archive paired with the managed KeraLua input used to check it.
 Native Lua modules and unsupported OS services are not supplied by this link.
+
+The root `build.py` fetches the exact NLua/lua source revision from
+`sources.lock.json` and supplies the prepared KeraLua assembly automatically.
+Independent use of this lower-level builder still accepts explicit source,
+KeraLua, libnx SDK and output paths. The builder compares the selected assembly's
+imports against native exports; that check does not establish runtime safety.

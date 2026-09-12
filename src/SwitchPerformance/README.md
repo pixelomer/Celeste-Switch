@@ -2,7 +2,7 @@
 
 A removable diagnostic mod for the .NET 10 host. Its wrappers call the next
 hook/original once with the original arguments; timing is recorded in finally
-blocks. Checksum buffering is an optional, disabled-by-default optimization. Disable the diagnostic ZIP through
+blocks. Checksum buffering is enabled by default for new mod settings; it is removable. Disable the diagnostic ZIP through
 ordinary mod configuration to remove its measurements.
 
 ## Build from paired inputs
@@ -42,9 +42,9 @@ the diagnostic package.
 
 Diagnostics defaults false and is read at startup. With it disabled, Load installs
 only the scoped checksum hooks: no frame/sampling hooks, profile writer or profile
-files. BufferChecksums remains a separate false-by-default setting. Enable it
-explicitly to request larger checksum buffers; enabling Diagnostics alone does
-not enable buffering. Detailed sampling requires Diagnostics.
+files. BufferChecksums is a separate true-by-default setting for new settings;
+existing saved values remain under the user's control. Diagnostics does not
+select that value. Detailed sampling requires Diagnostics.
 
 Settings use Everest's ordinary mod options and
 Saves/modsettings-SwitchPerformance.celeste. Change startup settings while the
@@ -121,7 +121,7 @@ by all frames; absent sampled frames yield a null per-frame estimate.
 
 ## Scoped checksum buffering
 
-BufferChecksums defaults false. A guarded IL hook requests 128 KiB instead of
+BufferChecksums defaults true for new settings. A guarded IL hook requests 128 KiB instead of
 4 KiB from HashAlgorithm.ComputeHash(Stream)'s ArrayPool only for exact
 FileStream objects and Everest's XXHash64, synchronously inside GetChecksum(path).
 Other stream types, algorithms and unrelated calls retain the original request.
@@ -163,9 +163,9 @@ measure isolated GPU execution, change sorting/batching, skip simulation updates
 or prune other mods' hooks. Preserve sprite order, texture lifetime and effect
 semantics when assessing any future rendering change.
 
-## Opt-in configuration and rollback
+## Checksum-only configuration and rollback
 
-For checksum buffering without frame instrumentation, use this explicit example:
+For checksum buffering without frame instrumentation, an explicit example is:
 
 ```yaml
 Diagnostics: false
@@ -173,8 +173,10 @@ DetailedEntities: false
 BufferChecksums: true
 ```
 
-This is an opt-in configuration, not the source defaults or a compatibility
-certification. Keep the original mod profile, settings and saves intact.
+DetailedEntities defaults true in source but is inactive while Diagnostics is
+false. The example is not a compatibility certification. The root build includes
+this ordinary mod unless --without-performance-mod is selected; it does not
+rewrite existing user settings. Keep the original mod profile and saves intact.
 Disabling BufferChecksums restores the original requested read size. Disabling
 the diagnostic ZIP while the game is closed removes its hooks on the next launch.
 Neither action requires clearing relink/audio caches or restoring saves.
