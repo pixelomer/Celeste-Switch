@@ -361,6 +361,9 @@ static void acquire_process(void) {
   svcCloseHandle(client);
   probe_log("FMOD_PROBE acquired process handle=%x", probe_process);
 }
+#ifndef CELESTE_FMOD_LIBRARY_DIR
+#define CELESTE_FMOD_LIBRARY_DIR "sdmc:/switch/celeste-fmod-11014/lib"
+#endif
 void android_load(void) {
   set_tls(main_tls);
   acquire_process();
@@ -375,7 +378,7 @@ void android_load(void) {
 
   for (int i = 0; i < 2; i++) {
     char p[256];
-    snprintf(p, sizeof(p), "sdmc:/switch/celeste-fmod-11014/lib/%s", names[i]);
+    snprintf(p, sizeof(p), CELESTE_FMOD_LIBRARY_DIR "/%s", names[i]);
     void *base = memalign(4096, 8 * 1024 * 1024);
     if (!base)
       fatal_error("load allocation");

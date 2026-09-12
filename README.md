@@ -1,8 +1,9 @@
 # PC Celeste and Everest on Horizon
 
-This repository contains source tools and compatibility requirements for an
-independent homebrew host of the PC FNA version of Celeste and Everest.
-The metadata tools do not implement a playable port.
+This repository contains a native homebrew host, local preparation tools and
+compatibility fixtures for the PC FNA version of Celeste and Everest.
+The host executes the user's converted game assembly directly on Horizon
+CoreCLR .NET 10; local preparation keeps the original installation separate.
 
 See [.NET 10 runtime compatibility](docs/RUNTIME_COMPATIBILITY.md),
 [hosting requirements](docs/FEASIBILITY.md) and
@@ -10,6 +11,16 @@ See [.NET 10 runtime compatibility](docs/RUNTIME_COMPATIBILITY.md),
 The [input contract](research/BASELINE.json) identifies supported PC assemblies;
 [source references](research/upstreams.lock.json) pin comparison sources,
 not a complete application build.
+
+## Build and prepare local inputs
+
+Follow the [host source recipe](host/README.md) for the paired runtime,
+framework, native libraries and user-owned game assembly/content inputs.
+Use the [standard Everest preparation tool](tools/prepare-everest/README.md)
+for a separate modded copy; it does not inject a fixed set of mods or launch
+the game. Compatibility criteria remain in the linked guides, not in captured
+run reports. Source builds and assembly inventories alone do not establish
+complete gameplay or ordinary Mods/ compatibility.
 
 ## User-owned inputs and read-only inventories
 
@@ -69,8 +80,9 @@ sources are not a substitute for a matched runtime, BCL and native-library build
 
 ## Source and output ownership
 
-Original implementation belongs in src/, fixtures in tests/, portable tools in
-scripts/, input contracts and source pins in research/, and guides in docs/.
+Native entry integration lives in host/ and shared audio adapters in native/.
+Local game preparation tools live in tools/, fixtures in tests/, metadata tools
+in scripts/, input contracts/source pins in research/, and guides in docs/.
 Generated outputs belong in ignored artifacts/ or local/.
 
 Preparation of a user's game must use a separate copy and preserve saves.
