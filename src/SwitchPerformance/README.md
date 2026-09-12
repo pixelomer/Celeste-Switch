@@ -58,3 +58,19 @@ Histograms have 128 quarter-millisecond bins with overflow at 31.75 ms.
 Count, total and maximum are recorded separately; do not infer sub-bin precision
 or an exact percentile from the histogram. See the
 [measurement method](../../docs/PERFORMANCE_INVESTIGATION.md) for comparison scope.
+
+## Summarize one run
+
+Copy a complete run's JSON records to an ignored directory, preserving the
+originals, then use the standard-library-only metadata reader:
+
+```sh
+python3 scripts/summarize-performance.py artifacts/performance-records
+```
+
+The input must contain exactly one start record. The tool groups windows whose
+start/end context labels match, aggregates inclusive meters and histogram
+percentile bounds, and lists individual checksum/archive durations. It reports
+hook/snapshot failures and the maximum dropped count; it does not automatically
+reject every incomplete or transitional run. Output goes to stdout. Keep any
+redirected summary outside Git and preserve an existing file before redirection.
