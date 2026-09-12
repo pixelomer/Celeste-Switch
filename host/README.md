@@ -301,3 +301,26 @@ arbitrary native dependencies or online/TLS support. Assess those separately
 using the [broader compatibility criteria](../docs/ROADMAP.md). Keep captured
 observations outside Git; do not present a source inventory as an execution
 result.
+
+## Managed data-pool budget
+
+--managed-pool-mib selects the shared GC/PAL physical data-backing budget at
+host build time. It accepts integer MiB values from 64 through 2048 and defaults
+to 512; invalid values fail argument parsing. Append this option to the host
+build command when selecting a different budget. The builder records the
+chosen value and the selected runtime's nxvm.h identity in its generated
+integration manifest.
+
+Use the runtime revision in the ordinary-mod source profile above: its GC
+memory heuristics read the actual shared-pool capacity. The builder includes
+that runtime's src/native/libs/Common header and defines the selected budget
+for the native host. Before CoreCLR initialization, native setup calls
+nxvm_ensure_initialized and requires the resulting capacity to equal the
+requested budget. Initialization failure or a differently sized existing pool
+aborts setup; the host does not silently fall back to another allocation.
+
+This pool is separate from native graphics, audio and executable-code backing.
+Increasing it consumes process memory and does not make all of that memory
+available to managed objects. Assess the combined memory budget and workload
+instead of interpreting the upper argument limit as a guaranteed allocation.
+The option does not change mod ZIPs or replace the ordinary loader.

@@ -7,9 +7,11 @@ p=argparse.ArgumentParser(description=__doc__)
 for name in ('runtime','runtime-baseline','graphics-build','fmod-build','celeste','content-assembly','fna','sdl-build','monomod','dependency-directory','output'):p.add_argument('--'+name,type=Path,required=True)
 p.add_argument('--prepared-fna',type=Path,help='Use the paired FNA already patched by the standard Everest installer')
 p.add_argument('--lua-build',type=Path,help='Pinned native Lua build for Everest')
+p.add_argument('--managed-pool-mib',type=int,default=512,help='Shared GC/PAL data backing pool in MiB (64..2048); leaves native graphics/audio allocations separate')
 a=p.parse_args()
+if not 64 <= a.managed_pool_mib <= 2048:p.error('Managed pool must be 64..2048 MiB')
 for key,value in vars(a).items():
- if value is not None:setattr(a,key,value.resolve())
+ if isinstance(value,Path):setattr(a,key,value.resolve())
 a.output.mkdir(parents=True,exist_ok=False);out=a.output
 here=Path(__file__).resolve().parent;platform=here.parent/'native/fmod'
 snapshot=out/'sources';snapshot.mkdir()
@@ -46,6 +48,7 @@ if sdk is None:raise SystemExit('Missing runtime SDK')
 commands=[]
 def run(cmd):commands.append(list(map(str,cmd)));subprocess.run(commands[-1],check=True)
 flags=['-O2','-g','-fexceptions','-fno-omit-frame-pointer',f'-I{a.runtime}/src/coreclr/hosts/inc','-march=armv8-a+crc+crypto','-mtune=cortex-a57','-mtp=soft','-fPIE','-D__SWITCH__','-D_GNU_SOURCE','-DFMOD_PROBE_RELEASE','-DFMOD_ADAPTER_MIN_STACK=1572864','-DCELESTE_FMOD_LIBRARY_DIR="sdmc:/switch/celeste-pc/lib"',f'-I{snapshot}',f'-I{a.fmod_build}/sdk/inc',f'-I{sdk}/include','-I/opt/devkitpro/portlibs/switch/include',f'-I{Path(os.environ["JAVA_HOME"]).resolve()}/include',f'-I{Path(os.environ["JAVA_HOME"]).resolve()}/include/linux','-Werror=incompatible-pointer-types','-Werror=implicit-function-declaration']
+flags += [f'-I{a.runtime}/src/native/libs/Common',f'-DCELESTE_MANAGED_POOL_MIB={a.managed_pool_mib}']
 objects=[]
 for name in ('android','jni','runtime','output','so_util','imports'):
  obj=out/(name+'.o');run(['aarch64-none-elf-gcc',*flags,'-c',snapshot/(name+'.c'),'-o',obj]);objects.append(obj)
@@ -90,6 +93,8 @@ if lua:
  for symbol in lua['exports']:cmd+=['--export-symbol',symbol]
 run(cmd);shutil.copy2(out/'host/coreclr-host-probe.nro',out/'celeste-pc.nro')
 manifest={'prepared_fna_sha256':sha(fna),'lua_manifest_sha256':sha(a.lua_build/'manifest.json') if lua else None,'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(a.graphics_build/'host/build-manifest.json'),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
+manifest['managed_pool_mib']=a.managed_pool_mib
+manifest['nxvm_header_sha256']=sha(a.runtime/'src/native/libs/Common/nxvm.h')
 payload=out/'host/managed/lib';payload.mkdir()
 for name in ('libfmod.so','libfmodstudio.so'):shutil.copy2(a.fmod_build/'sdk/android'/name,payload/name)
 (out/'integration-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

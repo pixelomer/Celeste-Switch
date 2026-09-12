@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include <string.h>
 #include "coreclr-libnx.h"
+#include "nxvm.h"
 extern void* monomod_libnx_exception_helper(int);
 extern void* PAL_LoadLibraryDirect(const char*);
 extern void* PAL_GetProcAddressDirect(void*,const char*);
@@ -27,6 +28,16 @@ void* HostResolvePInvoke(const char *library,const char *entry){
 
 // SDL's homebrew preference policy uses cwd. Keep saves private to this port.
 int HostConfigureApplication(void) {
+    // Configure the existing shared allocator before CoreCLR/BCL initialize it.
+    // This is physical data backing, separate from native graphics, audio and
+    // executable-code allocations. The runtime's GC reads this actual capacity.
+    const size_t managed_pool = (size_t)CELESTE_MANAGED_POOL_MIB << 20;
+    if (!nxvm_ensure_initialized(managed_pool) || nxvm_stats().capacity != managed_pool) {
+        fprintf(stderr, "HOST managed pool initialization failed requested=%zu actual=%zu\n",
+                managed_pool, nxvm_stats().capacity);
+        return 1;
+    }
+    printf("HOST managed pool=%zu virtual arena=%zu\n", managed_pool, nxvm_virtual_capacity());
     if (chdir("sdmc:/switch/celeste-pc") != 0) { perror("Celeste working directory"); return 1; }
     if (mkdir("sdmc:/switch/celeste-pc/tmp", 0777) != 0 && errno != EEXIST) {
         perror("Celeste temporary directory"); return 1;
