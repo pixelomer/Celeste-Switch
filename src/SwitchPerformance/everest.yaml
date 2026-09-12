@@ -1,0 +1,6 @@
+- Name: SwitchPerformance
+  Version: 0.1.0
+  DLL: SwitchPerformance.dll
+  Dependencies:
+    - Name: Everest
+      Version: 1.0.0
