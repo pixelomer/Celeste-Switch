@@ -199,3 +199,15 @@ the selected installation. Install the complete generated managed directory,
 not a mixture of framework or game assemblies from different builds.
 Additional ordinary mod compatibility and unsupported OS/native services
 remain subject to the project input and compatibility contracts.
+
+## Application-local temporary files
+
+Native setup creates /switch/celeste-pc/tmp and verifies that it is a directory
+before initializing CoreCLR. It sets TMPDIR to that application-local path;
+creation or directory-check failures abort setup. This supplies ordinary
+temporary-file storage, not shared-memory IPC support.
+
+The host sets Everest's existing EVEREST_NO_ERRORLOG_ON_CRASH option to 1,
+suppressing an external desktop error-log viewer while retaining the error log.
+Do not treat that option as a successful game exit or suppress the underlying
+exception. Desktop process launching remains unsupported.

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
 #include <SDL2/SDL.h>
 #include <string.h>
 #include "coreclr-libnx.h"
@@ -26,6 +28,14 @@ void* HostResolvePInvoke(const char *library,const char *entry){
 // SDL's homebrew preference policy uses cwd. Keep saves private to this port.
 int HostConfigureApplication(void) {
     if (chdir("sdmc:/switch/celeste-pc") != 0) { perror("Celeste working directory"); return 1; }
+    if (mkdir("sdmc:/switch/celeste-pc/tmp", 0777) != 0 && errno != EEXIST) {
+        perror("Celeste temporary directory"); return 1;
+    }
+    struct stat temp;
+    if (stat("sdmc:/switch/celeste-pc/tmp", &temp) != 0 || !S_ISDIR(temp.st_mode)) return 1;
+    setenv("TMPDIR", "/switch/celeste-pc/tmp", 1);
+    // Existing Everest option: preserve the error log without launching a viewer.
+    setenv("EVEREST_NO_ERRORLOG_ON_CRASH", "1", 1);
     setenv("FNA3D_FORCE_DRIVER", "OpenGL", 1);
     setenv("FNA_AUDIO_DISABLE_SOUND", "1", 1);
     setenv("FNA3D_OPENGL_DISABLE_LATESWAPTEAR", "1", 1);
