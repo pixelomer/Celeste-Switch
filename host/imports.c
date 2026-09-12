@@ -7,6 +7,9 @@
 #include <string.h>
 #include "coreclr-libnx.h"
 #include "nxvm.h"
+#ifdef CELESTE_NXLINK_STDIO
+#include <switch.h>
+#endif
 extern void* monomod_libnx_exception_helper(int);
 extern void* PAL_LoadLibraryDirect(const char*);
 extern void* PAL_GetProcAddressDirect(void*,const char*);
@@ -28,6 +31,20 @@ void* HostResolvePInvoke(const char *library,const char *entry){
 
 // SDL's homebrew preference policy uses cwd. Keep saves private to this port.
 int HostConfigureApplication(void) {
+#ifdef CELESTE_NXLINK_STDIO
+    // Optional test transport already provided by libnx and the nxlink launcher.
+    // Keep BSD/socket lifetime through process exit, including runtime workers.
+    Result network = socketInitializeDefault();
+    if (R_FAILED(network)) {
+        fprintf(stderr, "HOST nxlink socket initialization failed result=%08x\n", network);
+        return 1;
+    }
+    if (nxlinkStdio() < 0) {
+        perror("HOST nxlink stdout/stderr connection");
+        return 1;
+    }
+    printf("HOST live nxlink stdout/stderr enabled\n");
+#endif
     // Configure the existing shared allocator before CoreCLR/BCL initialize it.
     // This is physical data backing, separate from native graphics, audio and
     // executable-code allocations. The runtime's GC reads this actual capacity.

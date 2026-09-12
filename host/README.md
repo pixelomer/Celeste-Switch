@@ -324,3 +324,25 @@ Increasing it consumes process memory and does not make all of that memory
 available to managed objects. Assess the combined memory budget and workload
 instead of interpreting the upper argument limit as a guaranteed allocation.
 The option does not change mod ZIPs or replace the ordinary loader.
+
+## Optional live stdout and stderr
+
+Add --nxlink-stdio to the host build command to select libnx's existing nxlink
+output connection. The builder records the option in the integration manifest
+and defines CELESTE_NXLINK_STDIO for the native host. Compilation still does
+not deploy or launch the application.
+
+For this optional mode, launch through the nxlink utility supplied with the
+devkitPro Switch tools, with its stdio server enabled. The launcher supplies
+the callback address consumed by libnx; a direct launch without that callback
+is not equivalent. Socket initialization or connection failure aborts host
+setup. Keep network output and any local capture confined to a trusted
+development environment.
+
+The default remains SD stdout/stderr. The selected mode connects and redirects
+both streams before managed-pool and application setup, keeping socket/BSD
+lifetime through process exit. The native probe log remains on SD. Earlier
+runtime log initialization and its documented overwrite behavior still apply;
+the option is not a log backup mechanism and does not rotate Everest's own
+logs or history. Preserve existing logs before a run and keep captures outside
+source history.
