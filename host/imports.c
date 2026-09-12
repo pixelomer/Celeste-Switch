@@ -49,12 +49,19 @@ int HostConfigureApplication(void) {
     // This is physical data backing, separate from native graphics, audio and
     // executable-code allocations. The runtime's GC reads this actual capacity.
     const size_t managed_pool = (size_t)CELESTE_MANAGED_POOL_MIB << 20;
-    if (!nxvm_ensure_initialized(managed_pool) || nxvm_stats().capacity != managed_pool) {
+    bool pool_ready;
+#if CELESTE_PROTECTED_MANAGED_POOL
+    pool_ready = nxvm_init_protected(managed_pool);
+#else
+    pool_ready = nxvm_ensure_initialized(managed_pool);
+#endif
+    if (!pool_ready || nxvm_stats().capacity != managed_pool) {
         fprintf(stderr, "HOST managed pool initialization failed requested=%zu actual=%zu\n",
                 managed_pool, nxvm_stats().capacity);
         return 1;
     }
     printf("HOST managed pool=%zu virtual arena=%zu\n", managed_pool, nxvm_virtual_capacity());
+    printf("HOST protected managed pool=%d\n", CELESTE_PROTECTED_MANAGED_POOL);
 #if CELESTE_GC_REGION_MIB
     // Use the upstream GC tuning option, without changing reservation semantics.
     // Keep room in the shared arena for GC bookkeeping and other PAL/BCL users.

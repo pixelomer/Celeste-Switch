@@ -368,3 +368,31 @@ automatically remove that cap. Leave room for GC bookkeeping and other shared
 PAL/BCL users, and assess total native/managed usage rather than treating an
 accepted option value as proof that a workload will fit. This option does not
 change allocator reservation semantics or mod behavior.
+
+## Protected managed pool and graphics diagnostics
+
+--protected-managed-pool selects the optional nxvm data-alias backend before
+CoreCLR initialization. For this option, obtain runtime
+[22d0c564047f71eb914889066b7107ab6b644533](https://github.com/pixelomer/dotnet-runtime/tree/22d0c564047f71eb914889066b7107ab6b644533)
+in a new ignored source checkout using the same runtime URL as above. Follow
+that revision's [host build instructions](https://github.com/pixelomer/dotnet-runtime/blob/22d0c564047f71eb914889066b7107ab6b644533/src/coreclr/pal/tests/libnx/host/README.md)
+and linked SDK/ICU instructions, and point both --runtime and --runtime-baseline
+at that complete source/build tree. Do not combine the newer header with an
+older native runtime archive.
+
+The [protected-pool contract](https://github.com/pixelomer/dotnet-runtime/blob/22d0c564047f71eb914889066b7107ab6b644533/docs/workflow/libnx-protected-pool.md)
+requires an own-process handle and process-code mapping/protection services.
+Virtual capacity equals physical backing, including guard pages; larger sparse
+reservations are not supplied by this backend. The backing remains allocated
+for the pool lifetime. The host calls nxvm_init_protected and retains the exact
+capacity/failure checks and GC-region headroom guard. It never silently falls
+back to the default backend. Without this option, nxvm_ensure_initialized
+retains the previous initialization path.
+
+--mesa-library selects an explicit replacement Mesa archive only after the
+original graphics inputs pass their manifest checks. There must be exactly
+one original libEGL.a to replace. The builder records this override and the
+protected-pool flag separately in the integration manifest. For an optional
+instrumented archive, follow the [buffer diagnostic recipe](../tests/graphics-buffer-diagnostics/README.md).
+These controls do not change mod ZIPs or managed payloads, establish adequate
+memory for a workload, or claim successful graphics execution.
