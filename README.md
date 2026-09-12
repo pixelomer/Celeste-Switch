@@ -89,3 +89,6 @@ Preparation of a user's game must use a separate copy and preserve saves.
 Do not commit or distribute game implementations, decompiled/patched assemblies,
 assets, banks, FMOD SDK files, proprietary platform SDK material or credentials.
 Preserve third-party licenses and source origins.
+
+Optional [ordinary mod package fixtures](tests/mods/README.md) provide pinned
+external inputs and observable compatibility checks through normal Mods/ loading.
