@@ -106,6 +106,9 @@ static int once(int *p, void (*fn)(void)) {
       svcSleepThread(100000);
   return 0;
 }
+#ifndef FMOD_ADAPTER_MIN_STACK
+#define FMOD_ADAPTER_MIN_STACK (256 * 1024)
+#endif
 typedef struct {
   size_t stack;
   int detached;
@@ -146,7 +149,7 @@ static int create(uint64_t *out, const Attr *a, void *(*fn)(void *),
   pthread_attr_t at;
   pthread_attr_init(&at);
   pthread_attr_setstacksize(&at,
-                            a && a->stack > 256 * 1024 ? a->stack : 256 * 1024);
+                            a && a->stack > FMOD_ADAPTER_MIN_STACK ? a->stack : FMOD_ADAPTER_MIN_STACK);
   if (a && a->detached)
     pthread_attr_setdetachstate(&at, PTHREAD_CREATE_DETACHED);
   pthread_t t;

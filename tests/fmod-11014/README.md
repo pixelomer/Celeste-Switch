@@ -176,3 +176,9 @@ File identity is not authentication or proof of where code executed.
 Keep logs, SDK files, recordings, manifests and binaries outside source history.
 This synchronous native fixture does not establish asynchronous game mixing,
 managed callback integration or normal Everest Mods/ compatibility.
+
+The Bionic/JNI/import implementation is shared from
+[the native integration sources](../../native/fmod/README.md).
+The standalone native fixture retains a 256 KiB minimum adapter-thread stack;
+the [managed fixture](../fmod-managed/README.md) selects 1536 KiB for
+CoreCLR callback threads and uses a separate asynchronous output plugin.

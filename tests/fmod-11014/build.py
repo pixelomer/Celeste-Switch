@@ -2,6 +2,9 @@
 """Build exact FMOD 1.10.14 controls from user-supplied SDK archives, never FMOD 2."""
 import argparse, datetime, hashlib, json, os, re, shutil, subprocess, tarfile
 from pathlib import Path
+import sys
+platform_source=Path(__file__).resolve().parents[2]/"native/fmod"
+sys.path.insert(0,str(platform_source))
 from fmod_imports import generate_imports
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('--archives',type=Path,required=True)
@@ -15,8 +18,9 @@ for k in ('archives','loader','libnx','output'): setattr(a,k,getattr(a,k).resolv
 a.output.mkdir(parents=True,exist_ok=False)
 source=Path(__file__).resolve().parent; out=a.output
 src=out/'sources';src.mkdir()
-for path in source.iterdir():
- if path.is_file():shutil.copy2(path,src/path.name)
+for folder in (source,platform_source):
+ for path in folder.iterdir():
+  if path.is_file():shutil.copy2(path,src/path.name)
 sdk=out/'sdk'; sdk.mkdir()
 def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
 expected={'android':'e374d9d4e189281d3a24b6459614df48a24b9816c829fded449ec14b7b0baccb','linux':'52e393725872e1da044dd95be71b54e96911b49cb34bb0615e12ded6e4d37103'}
