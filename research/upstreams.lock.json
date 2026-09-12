@@ -86,6 +86,12 @@
       "path": "everest-libs-source/source/FNA/lib/SDL2-CS",
       "url": "https://github.com/flibitijibibo/SDL2-CS",
       "commit": "1ef072adb1653d3e79fa99586ebcb1797a54caca"
+    },
+    {
+      "path": "sdl2-switch",
+      "url": "https://github.com/devkitPro/SDL.git",
+      "commit": "0738d3c9f6993875e2f3dd0e8cc0bb4ae4440b4e",
+      "purpose": "Public SDL2 2.28.5 Horizon source baseline"
     }
   ],
   "notes": [
