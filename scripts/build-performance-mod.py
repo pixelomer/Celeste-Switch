@@ -32,7 +32,7 @@ digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
 manifest = {'command': command, 'zip_sha256': digest(archive),
             'files': {name: digest(path) for name, path in files.items()},
             'references': {name: digest(install/name) for name in
-                           ['Celeste.dll', 'FNA.dll', 'MonoMod.RuntimeDetour.dll']},
+                           ['Celeste.dll', 'FNA.dll', 'MonoMod.RuntimeDetour.dll', 'MonoMod.Utils.dll', 'Mono.Cecil.dll']},
             'source_sha256': {path.name: digest(path) for path in source.iterdir() if path.is_file()}}
 (out/'package.json').write_text(json.dumps(manifest, indent=2)+'\n')
 print(archive)

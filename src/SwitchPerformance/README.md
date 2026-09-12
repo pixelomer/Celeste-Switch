@@ -38,7 +38,25 @@ Everest 1.0.0; the selected 0.0.0 development loader has a version-check excepti
 Do not redistribute the proprietary game or referenced loader assemblies with
 the diagnostic package.
 
+## Startup modes
+
+Diagnostics defaults false and is read at startup. With it disabled, Load installs
+only the scoped checksum hooks: no frame/sampling hooks, profile writer or profile
+files. BufferChecksums remains a separate false-by-default setting. Enable it
+explicitly to request larger checksum buffers; enabling Diagnostics alone does
+not enable buffering. Detailed sampling requires Diagnostics.
+
+Settings use Everest's ordinary mod options and
+Saves/modsettings-SwitchPerformance.celeste. Change startup settings while the
+game is closed, or save them through the normal menu and restart.
+
+Without Diagnostics, Emit has no writer and produces no structured hook-status
+records. The initial startup message alone does not prove that the guarded IL
+pattern matched. Diagnose hook availability separately before attributing effects.
+
 ## Records and interpretation
+
+The following records are produced only when Diagnostics is enabled.
 
 Records are closed JSON arrays in performance/RUN/ under the game directory.
 The writer batches up to 64 records or a two-second deadline, with timed queue

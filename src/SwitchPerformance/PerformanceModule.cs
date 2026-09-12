@@ -25,13 +25,21 @@ public sealed partial class PerformanceModule : EverestModule {
     private readonly Meter intervals = new("FrameInterval");
 
     public override void Load() {
+        if (!Settings.Diagnostics) {
+            InstallChecksumBuffering();
+            InstallChecksumHook(false);
+            Logger.Log("SwitchPerformance", "Checksum buffer hook loaded; frame profiling and profile file output disabled.");
+            return;
+        }
         directory = Path.Combine(Everest.PathGame, "performance", run);
         Directory.CreateDirectory(directory);
         writer = new Thread(WriteRecords) { IsBackground = true, Name = "SwitchPerformance writer" };
         writer.Start();
         Emit(new { kind = "start", run, utc = DateTime.UtcNow, frequency = Stopwatch.Frequency,
             runtime = Environment.Version.ToString(), processorCount = Environment.ProcessorCount,
-            purpose = "measurement only; each hook calls orig exactly once",
+            purpose = "diagnostics with optional scoped checksum buffering; outer hooks call orig exactly once",
+            diagnostics = Settings.Diagnostics, bufferChecksums = Settings.BufferChecksums,
+            detailedEntities = Settings.DetailedEntities,
             tieredCompilation = Environment.GetEnvironmentVariable("DOTNET_TieredCompilation"),
             quickJit = Environment.GetEnvironmentVariable("DOTNET_TC_QuickJit"),
             minOpts = Environment.GetEnvironmentVariable("DOTNET_JITMinOpts") });
@@ -53,18 +61,7 @@ public sealed partial class PerformanceModule : EverestModule {
         TimedVoid<Microsoft.Xna.Framework.Graphics.SpriteBatch>("SpriteBatch.FlushBatch", "FlushBatch");
         TimedVoid<VirtualTexture>("VirtualTexture.Reload", "Reload");
         InstallChecksumBuffering();
-        var checksums = NewMeter("Everest.GetChecksum(path)");
-        Add(typeof(Everest).GetMethod("GetChecksum", Methods, null, new[] { typeof(string) }, null),
-            (Func<Func<string, byte[]>, string, byte[]>)((orig, path) => {
-                long start = checksums.Start();
-                int previousDepth = checksumDepth++;
-                try { return orig(path); }
-                finally {
-                    checksumDepth = previousDepth;
-                    checksums.Stop(start);
-                    Emit(new { kind = "checksum", file = Path.GetFileName(path), ticks = Stopwatch.GetTimestamp()-start });
-                }
-            }), "Everest.GetChecksum(path)");
+        InstallChecksumHook(true);
         Add(typeof(Everest.Loader).GetMethod("LoadZip", Methods, null, new[] { typeof(string) }, null),
             (Action<Action<string>, string>)((orig, path) => {
                 long start = Stopwatch.GetTimestamp();
@@ -91,6 +88,23 @@ public sealed partial class PerformanceModule : EverestModule {
                 }
             }), "Game.Tick");
         Logger.Log("SwitchPerformance", "Measurement hooks loaded; closed JSON records under " + directory);
+    }
+
+    private void InstallChecksumHook(bool diagnostics) {
+        Meter? checksums = diagnostics ? NewMeter("Everest.GetChecksum(path)") : null;
+        Add(typeof(Everest).GetMethod("GetChecksum", Methods, null, new[] { typeof(string) }, null),
+            (Func<Func<string, byte[]>, string, byte[]>)((orig, path) => {
+                long start = checksums?.Start() ?? 0;
+                int previousDepth = checksumDepth++;
+                try { return orig(path); }
+                finally {
+                    checksumDepth = previousDepth;
+                    if (checksums != null) {
+                        checksums.Stop(start);
+                        Emit(new { kind = "checksum", file = Path.GetFileName(path), ticks = Stopwatch.GetTimestamp()-start });
+                    }
+                }
+            }), "Everest.GetChecksum(path)");
     }
 
     private Meter NewMeter(string name) { var meter = new Meter(name); meters.Add(meter); return meter; }
@@ -145,7 +159,7 @@ public sealed partial class PerformanceModule : EverestModule {
         DumpChains();
     }
     private void Emit(object record) {
-        if (stopped) return;
+        if (stopped || writer == null) return;
         try { if (!output.TryAdd(record)) Interlocked.Increment(ref dropped); }
         catch (InvalidOperationException) { /* teardown raced with a loader hook */ }
     }
