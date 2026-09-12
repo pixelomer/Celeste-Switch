@@ -15,6 +15,7 @@ extern void* PAL_LoadLibraryDirect(const char*);
 extern void* PAL_GetProcAddressDirect(void*,const char*);
 extern int PAL_FreeLibraryDirect(void*);
 extern void* CelesteFmodResolve(const char*,const char*);
+extern unsigned __nx_nv_transfermem_size;
 void* HostResolvePInvoke(const char *library,const char *entry){
     if(library && entry && !strcmp(library,"__Internal")) {
 #define EXPORT(name) if(!strcmp(entry,#name))return (void*)name
@@ -45,6 +46,11 @@ int HostConfigureApplication(void) {
     }
     printf("HOST live nxlink stdout/stderr enabled\n");
 #endif
+    // Set libnx's supported NV service budget before the graphics driver starts.
+#if CELESTE_NV_TRANSFER_MIB
+    __nx_nv_transfermem_size = (unsigned)CELESTE_NV_TRANSFER_MIB << 20;
+#endif
+    printf("HOST NV transfer memory=%u\n", __nx_nv_transfermem_size);
     // Configure the existing shared allocator before CoreCLR/BCL initialize it.
     // This is physical data backing, separate from native graphics, audio and
     // executable-code allocations. The runtime's GC reads this actual capacity.

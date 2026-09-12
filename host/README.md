@@ -406,3 +406,20 @@ wrapper-capable runtime revision, coherent source-build inputs, optional
 allocator patch and paired native controls. The flag is off by default and
 recorded in the generated integration manifest. Successful and failing driver
 calls retain their original results; this option only observes failure state.
+
+## NV transfer-memory budget
+
+--nv-transfer-mib configures libnx's existing per-process NV service
+transfer-memory size before graphics initialization. Zero, the default, leaves
+the selected libnx value unchanged. A nonzero selection must be from 8 through
+64 MiB in steps of 8; other values fail argument parsing.
+
+The builder records the selection and defines CELESTE_NV_TRANSFER_MIB.
+Native setup assigns the corresponding byte value to __nx_nv_transfermem_size
+only for a nonzero override, then prints the configured bytes. The paired
+libnx service uses this value when creating its transfer memory.
+
+This budget is distinct from the shared managed backing, GC region, native
+graphics allocations and kernel mapping capacity. Changing it does not adjust
+CPU/GPU clocks or remove the need to account for other resource limits.
+Retain the existing protected/default-pool and driver failure behavior.

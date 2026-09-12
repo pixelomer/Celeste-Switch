@@ -9,12 +9,14 @@ p.add_argument('--prepared-fna',type=Path,help='Use the paired FNA already patch
 p.add_argument('--lua-build',type=Path,help='Pinned native Lua build for Everest')
 p.add_argument('--mesa-library',type=Path,help='Explicit replacement Mesa archive for graphics diagnostics; recorded separately')
 p.add_argument('--nvmap-diagnostics',action='store_true',help='Testing only: log failed NV allocation/map calls')
+p.add_argument('--nv-transfer-mib',type=int,default=0,help='NV service transfer-memory budget; zero keeps libnx default, otherwise 8..64 MiB in steps of 8')
 p.add_argument('--managed-pool-mib',type=int,default=512,help='Shared GC/PAL data backing pool in MiB (64..2048); leaves native graphics/audio allocations separate')
 p.add_argument('--gc-region-mib',type=int,default=0,help='Optional upstream GCRegionRange override in MiB; zero retains runtime default')
 p.add_argument('--protected-managed-pool',action='store_true',help='Use opt-in Horizon data alias pool; virtual capacity equals backing size')
 p.add_argument('--nxlink-stdio',action='store_true',help='Testing only: stream stdout/stderr to the nxlink launcher instead of SD files')
 a=p.parse_args()
 if not 64 <= a.managed_pool_mib <= 2048:p.error('Managed pool must be 64..2048 MiB')
+if a.nv_transfer_mib and (a.nv_transfer_mib < 8 or a.nv_transfer_mib > 64 or a.nv_transfer_mib % 8):p.error('NV transfer budget must be zero or 8..64 MiB in steps of 8')
 if a.gc_region_mib and (a.gc_region_mib < 64 or a.gc_region_mib % 64 or a.gc_region_mib > a.managed_pool_mib):p.error('GC region must be zero or a multiple of 64 MiB within the managed pool')
 for key,value in vars(a).items():
  if isinstance(value,Path):setattr(a,key,value.resolve())
@@ -61,6 +63,7 @@ flags=['-O2','-g','-fexceptions','-fno-omit-frame-pointer',f'-I{a.runtime}/src/c
 flags += [f'-I{a.runtime}/src/native/libs/Common',f'-DCELESTE_MANAGED_POOL_MIB={a.managed_pool_mib}']
 flags.append(f'-DCELESTE_GC_REGION_MIB={a.gc_region_mib}')
 flags.append(f'-DCELESTE_PROTECTED_MANAGED_POOL={int(a.protected_managed_pool)}')
+flags.append(f'-DCELESTE_NV_TRANSFER_MIB={a.nv_transfer_mib}')
 if a.nxlink_stdio:flags.append('-DCELESTE_NXLINK_STDIO')
 objects=[]
 for name in ('android','jni','runtime','output','so_util','imports'):
@@ -112,6 +115,7 @@ run(cmd);shutil.copy2(out/'host/coreclr-host-probe.nro',out/'celeste-pc.nro')
 manifest={'prepared_fna_sha256':sha(fna),'lua_manifest_sha256':sha(a.lua_build/'manifest.json') if lua else None,'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(a.graphics_build/'host/build-manifest.json'),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
 manifest['managed_pool_mib']=a.managed_pool_mib
 manifest['nvmap_diagnostics']=a.nvmap_diagnostics
+manifest['nv_transfer_mib']=a.nv_transfer_mib
 manifest['mesa_override']={'path':str(a.mesa_library),'sha256':sha(a.mesa_library)} if a.mesa_library else None
 manifest['gc_region_mib']=a.gc_region_mib
 manifest['protected_managed_pool']=a.protected_managed_pool
