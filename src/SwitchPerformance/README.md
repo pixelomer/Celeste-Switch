@@ -90,3 +90,10 @@ percentile bounds, and lists individual checksum/archive durations. It reports
 hook/snapshot failures and the maximum dropped count; it does not automatically
 reject every incomplete or transitional run. Output goes to stdout. Keep any
 redirected summary outside Git and preserve an existing file before redirection.
+
+The summary also accumulates collector/allocation deltas only where the prior
+window index exists and its end timestamp equals the current start. It reports
+the covered duration; a missing predecessor is not treated as a zero baseline.
+Collector pause ticks use TimeSpan units, separately from Stopwatch durations.
+Entity costs are normalized by the recorded sampled update or draw count, not
+by all frames; absent sampled frames yield a null per-frame estimate.

@@ -16,6 +16,7 @@ starts = [v for v in records if v.get('kind') == 'start']
 if len(starts) != 1: p.error('Expected exactly one run start record')
 frequency = starts[0]['frequency']
 groups = collections.defaultdict(list)
+all_windows = {v['index']: v for v in records if v.get('kind') == 'window'}
 for v in records:
     if v.get('kind') == 'window' and v['contextStart'] == v['contextEnd']:
         groups[v['contextEnd']].append(v)
@@ -47,6 +48,31 @@ for scene, windows in groups.items():
                               'drawFps': totals.get('Engine.Draw', {}).get('count', 0)/seconds,
                               'entitiesRange': [min(v['entities'] or 0 for v in windows), max(v['entities'] or 0 for v in windows)],
                               'phases': phases}
+    result = summary['scenes'][scene]
+    gc = {key: 0 for key in ['gc0', 'gc1', 'gc2', 'allocatedBytes', 'gcPauseTicks']}
+    gc_seconds = 0
+    samples = {}
+    sampled_frames = {'Update': sum(v.get('sampledUpdates', 0) for v in windows),
+                      'Render': sum(v.get('sampledDraws', 0) for v in windows)}
+    for v in windows:
+        previous = all_windows.get(v['index']-1)
+        if previous and previous['end'] == v['start']:
+            gc_seconds += (v['end']-v['start'])/frequency
+            for key in gc: gc[key] += v[key]-previous[key]
+        for meter in v.get('entitySamples', []):
+            row = samples.setdefault(meter['name'], {'count': 0, 'ticks': 0, 'maximumTicks': 0})
+            row['count'] += meter['count']; row['ticks'] += meter['ticks']
+            row['maximumTicks'] = max(row['maximumTicks'], meter['maximumTicks'])
+    result['gcDeltas'] = dict(gc, measuredSeconds=gc_seconds, pauseMs=gc['gcPauseTicks']/10000)
+    result['sampledFrames'] = sampled_frames
+    result['entitySamples'] = sorted([
+        {'name': name, 'calls': row['count'], 'totalMs': row['ticks']/frequency*1000,
+         'meanMs': row['ticks']/frequency*1000/row['count'],
+         'maxMs': row['maximumTicks']/frequency*1000,
+         'msPerSampledFrame': row['ticks']/frequency*1000/sampled_frames[name.split(':', 1)[0]]
+             if sampled_frames[name.split(':', 1)[0]] else None}
+        for name, row in samples.items() if row['count']],
+        key=lambda v: v['msPerSampledFrame'] or 0, reverse=True)
 for kind in ['checksum', 'loadZip']:
     values = [v for v in records if v.get('kind') == kind]
     summary[kind] = sorted([{'file': v['file'], 'seconds': v['ticks']/frequency} for v in values],
