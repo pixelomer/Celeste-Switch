@@ -81,3 +81,22 @@ Use the [paired allocator control recipe](../../native/mesa/README.md) to build
 original and fixed failure-injection NROs separately, and that guide's runtime
 requirements for optional host NV wrappers. None of these commands deploys a
 host, executes a fixture or demonstrates that a graphics workload will fit.
+
+## Allocator-only archive
+
+Use --fix-allocator --allocator-only to build an archive containing only the
+allocator correction, leaving the original buffer-upload archive member in
+place and omitting the added slab-failure log. --allocator-only without
+--fix-allocator is rejected. For example, use the source/SDK inputs above with
+a fresh --output artifacts/mesa-allocator-only directory and both flags.
+
+The helper still reads/checks the upload source and archive member, writes the
+source/header copies and records the proposed upload compile command. In this
+mode it does not execute that command or replace the upload object.
+buffer_diagnostic_compiled and allocator_only in the generated manifest
+distinguish selected behavior from a merely recorded command.
+
+Select the resulting libEGL.a explicitly through the host's --mesa-library.
+The host's separate --nvmap-diagnostics flag is independent; leave it unset to
+omit those driver wrappers. Neither archive selection nor an absence of
+diagnostic overhead establishes adequate resource budgets or game compatibility.

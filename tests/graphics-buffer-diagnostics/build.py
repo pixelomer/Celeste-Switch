@@ -17,7 +17,9 @@ p.add_argument('--mesa-library', type=Path, required=True)
 p.add_argument('--libnx', type=Path, required=True)
 p.add_argument('--output', type=Path, required=True)
 p.add_argument('--fix-allocator', action='store_true', help='Apply the checked slab allocation failure patch')
+p.add_argument('--allocator-only', action='store_true', help='Build only the allocator correction, with no per-upload or failure logging')
 a = p.parse_args()
+if a.allocator_only and not a.fix_allocator: p.error('--allocator-only requires --fix-allocator')
 out = a.output.resolve(); out.mkdir(parents=True, exist_ok=False)
 entries = json.loads((a.mesa_build / 'compile_commands.json').read_text())
 entry, = [x for x in entries if x['file'].endswith('/util/u_transfer.c')]
@@ -40,11 +42,11 @@ for item in original:
     if item in ('-MD', '-c', entry['file']): continue
     command.append(item)
 command += ['-I' + str(a.libnx.resolve() / 'include'), '-g', '-fno-omit-frame-pointer', '-c', str(modified), '-o', str(object_file)]
-subprocess.run(command, cwd=cwd, check=True)
+if not a.allocator_only: subprocess.run(command, cwd=cwd, check=True)
 archive = out / 'libEGL.a'; shutil.copy2(a.mesa_library, archive)
 members = subprocess.check_output(['aarch64-none-elf-ar', 't', str(archive)], text=True).splitlines()
 if members.count(object_file.name) != 1: raise SystemExit('Expected one target archive member')
-subprocess.run(['aarch64-none-elf-ar', 'r', str(archive), str(object_file)], check=True)
+if not a.allocator_only: subprocess.run(['aarch64-none-elf-ar', 'r', str(archive), str(object_file)], check=True)
 allocator = None
 if a.fix_allocator:
     mm_entry, = [x for x in entries if x['file'].endswith('/nouveau/nouveau_mm.c')]
@@ -55,8 +57,9 @@ if a.fix_allocator:
     mm_text = mm_copy.read_text()
     needle = '   if (ret) {\n      FREE(slab);'
     if mm_text.count(needle) != 1: raise SystemExit('Unexpected slab failure path')
-    mm_text = '#include <stdio.h>\n' + mm_text.replace(needle,
-        '   if (ret) {\n      fprintf(stderr, "NOUVEAU_MM slab allocation failed size=%u domain=%x result=%d\\n", size, cache->domain, ret);\n      FREE(slab);')
+    if not a.allocator_only:
+        mm_text = '#include <stdio.h>\n' + mm_text.replace(needle,
+            '   if (ret) {\n      fprintf(stderr, "NOUVEAU_MM slab allocation failed size=%u domain=%x result=%d\\n", size, cache->domain, ret);\n      FREE(slab);')
     mm_copy.write_text(mm_text)
     mm_command = []; skip = False
     for item in shlex.split(mm_entry['command']):
@@ -75,5 +78,7 @@ sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
 (out / 'manifest.json').write_text(json.dumps(dict(command=command, cwd=str(cwd),
     original_source_sha256=sha(source), modified_source_sha256=sha(modified),
     diagnostic_sha256=sha(out / 'check.h'), libnx_sha256=sha(a.libnx / 'lib/libnx.a'),
-    allocator=allocator, original_archive_sha256=sha(a.mesa_library), archive_sha256=sha(archive)), indent=2) + '\n')
+    allocator=allocator, allocator_only=a.allocator_only,
+    buffer_diagnostic_compiled=not a.allocator_only,
+    original_archive_sha256=sha(a.mesa_library), archive_sha256=sha(archive)), indent=2) + '\n')
 print(archive)

@@ -14,8 +14,11 @@ compile database. The [buffer diagnostic builder](../../tests/graphics-buffer-di
 accepts --fix-allocator to apply this patch to a copied nouveau_mm.c and replace
 its archive member. It requires exact source matches and uses --fuzz=0.
 
-That builder also retains the upload-destination diagnostic. The resulting
-archive is an explicit diagnostic input, not an uninstrumented release build.
+By default that builder retains the upload-destination diagnostic. Add
+--allocator-only together with --fix-allocator to keep only the allocator
+correction, without replacing the upload member or adding the slab-failure log.
+The host's NV wrappers remain a separate optional selection. See the buffer
+builder guide for manifest fields that distinguish compiled instrumentation.
 Original source, objects and archive remain unchanged. Select the new archive
 through the host's --mesa-library argument only after keeping the original
 manifest-checked graphics inputs available.
