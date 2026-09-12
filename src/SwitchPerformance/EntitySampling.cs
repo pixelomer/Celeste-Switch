@@ -10,11 +10,29 @@ namespace SwitchPerformance;
 public sealed partial class PerformanceModule {
     // Only one in 120 update/draw calls measures individual entities. Other
     // frames execute the existing call instruction, with one conditional branch.
-    public static bool SampleUpdate, SampleRender;
+    [ThreadStatic] public static bool SampleUpdate;
+    [ThreadStatic] public static bool SampleRender;
     private long updateNumber, drawNumber;
     private int sampledUpdates, sampledDraws;
     private readonly List<ILHook> entityHooks = new();
     private readonly Dictionary<(string, Type), Meter> entityMeters = new();
+    private bool chainsDumped;
+
+    private void DumpChains() {
+        if (chainsDumped || Engine.Scene is not Level) return;
+        chainsDumped = true;
+        foreach (Type type in new[] { typeof(Player), typeof(Solid), typeof(SolidTiles), typeof(Entity), typeof(ComponentList), typeof(Platform) }) {
+            foreach (MethodInfo method in type.GetMethods(Methods).Where(m => m.DeclaringType == type &&
+                (m.Name == "Update" || m.Name == "MoveH" || m.Name == "MoveV"))) {
+                try {
+                    var info = DetourManager.GetDetourInfo(method);
+                    Emit(new { kind = "hookChain", method = type.FullName + "." + method,
+                        detours = info.Detours.Select(d => d.Entry.DeclaringType?.FullName + "." + d.Entry.Name).ToArray(),
+                        il = info.ILHooks.Select(d => d.ManipulatorMethod.DeclaringType?.FullName + "." + d.ManipulatorMethod.Name).ToArray() });
+                } catch (Exception e) { Emit(new { kind = "hookChainFailure", method = method.ToString(), error = e.Message }); }
+            }
+        }
+    }
 
     private void InstallEntitySampling() {
         foreach (string method in new[] { "Update", "Render", "RenderOnly", "RenderOnlyFullMatch", "RenderExcept" }) {

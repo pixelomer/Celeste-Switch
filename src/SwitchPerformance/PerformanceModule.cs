@@ -45,18 +45,22 @@ public sealed partial class PerformanceModule : EverestModule {
         TimedVoid<Level>("Level.BeforeRender", "BeforeRender");
         TimedVoid<Scene>("Scene.Update", "Update");
         TimedVoid<EntityList>("EntityList.Update", "Update");
-        InstallEntitySampling();
+        if (Settings.DetailedEntities) InstallEntitySampling();
         TimedScene<GameplayRenderer>("Render");
         TimedScene<LightingRenderer>("BeforeRender");
         TimedScene<LightingRenderer>("Render");
         TimedScene<BackdropRenderer>("Render");
+        TimedVoid<Microsoft.Xna.Framework.Graphics.SpriteBatch>("SpriteBatch.FlushBatch", "FlushBatch");
         TimedVoid<VirtualTexture>("VirtualTexture.Reload", "Reload");
+        InstallChecksumBuffering();
         var checksums = NewMeter("Everest.GetChecksum(path)");
         Add(typeof(Everest).GetMethod("GetChecksum", Methods, null, new[] { typeof(string) }, null),
             (Func<Func<string, byte[]>, string, byte[]>)((orig, path) => {
                 long start = checksums.Start();
+                int previousDepth = checksumDepth++;
                 try { return orig(path); }
                 finally {
+                    checksumDepth = previousDepth;
                     checksums.Stop(start);
                     Emit(new { kind = "checksum", file = Path.GetFileName(path), ticks = Stopwatch.GetTimestamp()-start });
                 }
@@ -138,6 +142,7 @@ public sealed partial class PerformanceModule : EverestModule {
             dropped = Interlocked.Read(ref dropped) });
         sampledUpdates = sampledDraws = 0;
         contextStart = context; windowStart = now; nextWindow = now + Stopwatch.Frequency * 10;
+        DumpChains();
     }
     private void Emit(object record) {
         if (stopped) return;
@@ -164,6 +169,7 @@ public sealed partial class PerformanceModule : EverestModule {
         }
     }
     public override void Unload() {
+        checksumBufferHook?.Dispose();
         foreach (var hook in entityHooks) hook.Dispose();
         entityHooks.Clear();
         foreach (Hook hook in Enumerable.Reverse(hooks)) hook.Dispose();

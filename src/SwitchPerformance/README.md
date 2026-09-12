@@ -2,7 +2,7 @@
 
 A removable diagnostic mod for the .NET 10 host. Its wrappers call the next
 hook/original once with the original arguments; timing is recorded in finally
-blocks. This version has no optimization. Disable the diagnostic ZIP through
+blocks. Checksum buffering is an optional, disabled-by-default optimization. Disable the diagnostic ZIP through
 ordinary mod configuration to remove its measurements.
 
 ## Build from paired inputs
@@ -25,7 +25,7 @@ python3 scripts/build-performance-mod.py \
 
 The helper invokes dotnet build with an absolute PreparedInstall and isolated
 artifacts path. The project targets net10.0 and marks its game/framework/hook
-references Private=false. It packages only SwitchPerformance.dll and everest.yaml
+references Private=false, including MonoMod.Utils and Mono.Cecil for IL hooks. It packages only SwitchPerformance.dll and everest.yaml
 as artifacts/performance-mod/deploy/000-SwitchPerformance.zip, with fixed ZIP
 entry timestamps. Its generated package.json records input/source/output
 identities for local inspection; neither that file nor its binaries belong in Git.
@@ -97,3 +97,26 @@ the covered duration; a missing predecessor is not treated as a zero baseline.
 Collector pause ticks use TimeSpan units, separately from Stopwatch durations.
 Entity costs are normalized by the recorded sampled update or draw count, not
 by all frames; absent sampled frames yield a null per-frame estimate.
+
+## Scoped checksum buffering
+
+BufferChecksums defaults false. A guarded IL hook requests 128 KiB instead of
+4 KiB from HashAlgorithm.ComputeHash(Stream)'s ArrayPool only for exact
+FileStream objects and Everest's XXHash64, synchronously inside GetChecksum(path).
+Other stream types, algorithms and unrelated calls retain the original request.
+The hook requires exactly one matching rent-size instruction sequence; failures
+are reported explicitly. Unload disposes it. The original checksum call and
+stream, complete file bytes, algorithm and cache semantics remain in place.
+Actual read lengths still depend on the pooled buffer and stream.
+
+Read/HashCore chunk boundaries are observable to other hooks. Do not infer
+compatibility with every mod or arbitrary short-read pattern from an equivalent
+digest on one file. The source algorithm's nonstandard short-input result must
+remain unchanged. The [checksum fixture](../../tests/performance-checksum/README.md)
+checks aligned chunk-boundary behavior without loading the game.
+
+DetailedEntities defaults true and is read when installing entity sampling;
+false omits those IL hooks. Sampling flags are thread-local. Coarse timing also
+includes SpriteBatch.FlushBatch. On entering a Level, the profiler records the
+existing detour/IL-hook chains for selected entity and movement methods once;
+that inspection does not replace or disable those hooks.
