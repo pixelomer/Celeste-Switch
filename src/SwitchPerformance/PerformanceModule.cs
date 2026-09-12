@@ -28,7 +28,7 @@ public sealed partial class PerformanceModule : EverestModule {
         if (!Settings.Diagnostics) {
             InstallChecksumBuffering();
             InstallChecksumHook(false);
-            Logger.Log("SwitchPerformance", "Checksum buffer hook loaded; frame profiling and profile file output disabled.");
+            Logger.Log("SwitchPerformance", "Frame profiling and profile file output disabled.");
             return;
         }
         directory = Path.Combine(Everest.PathGame, "performance", run);

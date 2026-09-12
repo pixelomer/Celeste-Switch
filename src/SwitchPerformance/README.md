@@ -50,9 +50,12 @@ Settings use Everest's ordinary mod options and
 Saves/modsettings-SwitchPerformance.celeste. Change startup settings while the
 game is closed, or save them through the normal menu and restart.
 
-Without Diagnostics, Emit has no writer and produces no structured hook-status
-records. The initial startup message alone does not prove that the guarded IL
-pattern matched. Diagnose hook availability separately before attributing effects.
+Without Diagnostics there are no structured profile records. The checksum IL
+installer now separately logs success with the BufferChecksums setting or failure
+with the exception through Everest's normal Logger.Log. The startup message
+reports only that frame/file diagnostics are disabled, not that installation
+succeeded. Logger.Log uses Verbose level in the selected Everest source, so the
+configured tag threshold can hide these messages; absence is not proof of success.
 
 ## Records and interpretation
 

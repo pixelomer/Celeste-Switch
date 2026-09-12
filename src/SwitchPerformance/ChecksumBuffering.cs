@@ -39,8 +39,10 @@ public sealed partial class PerformanceModule {
             });
             Emit(new { kind = "hook", label = "scoped checksum read buffer", success = true,
                 enabled = Settings.BufferChecksums });
+            Logger.Log("SwitchPerformance", "Scoped checksum buffer hook installed; BufferChecksums=" + Settings.BufferChecksums);
         } catch (Exception e) {
             Emit(new { kind = "hook", label = "scoped checksum read buffer", success = false, error = e.ToString() });
+            Logger.Log("SwitchPerformance", "Checksum buffer hook unavailable; original hashing retained: " + e);
         }
     }
 }
