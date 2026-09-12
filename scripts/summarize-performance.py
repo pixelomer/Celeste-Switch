@@ -7,6 +7,8 @@ from pathlib import Path
 
 p = argparse.ArgumentParser(description=__doc__)
 p.add_argument('directory', type=Path)
+p.add_argument('--first-window', type=int, help='Inclusive window index for a controlled condition')
+p.add_argument('--last-window', type=int, help='Inclusive window index for a controlled condition')
 a = p.parse_args()
 records = []
 for path in sorted(a.directory.glob('*.json')):
@@ -19,8 +21,11 @@ groups = collections.defaultdict(list)
 all_windows = {v['index']: v for v in records if v.get('kind') == 'window'}
 for v in records:
     if v.get('kind') == 'window' and v['contextStart'] == v['contextEnd']:
+        if a.first_window is not None and v['index'] < a.first_window: continue
+        if a.last_window is not None and v['index'] > a.last_window: continue
         groups[v['contextEnd']].append(v)
 summary = {'run': starts[0]['run'], 'hookFailures': [v for v in records if v.get('kind') == 'hook' and not v['success']],
+           'windowBounds': [a.first_window, a.last_window],
            'snapshotFailures': [v for v in records if v.get('kind') == 'snapshotFailure'],
            'dropped': max((v.get('dropped', 0) for v in records), default=0), 'scenes': {}}
 for scene, windows in groups.items():

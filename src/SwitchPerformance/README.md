@@ -120,3 +120,10 @@ false omits those IL hooks. Sampling flags are thread-local. Coarse timing also
 includes SpriteBatch.FlushBatch. On entering a Level, the profiler records the
 existing detour/IL-hook chains for selected entity and movement methods once;
 that inspection does not replace or disable those hooks.
+
+Use --first-window and --last-window for inclusive scene-window index bounds.
+Only scene aggregation is bounded: failure and loading records
+still cover the full supplied run. A collector delta can use the immediately
+preceding record outside the selected bounds if its timestamps are contiguous.
+Choose bounds from the actual run; the tool does not determine stable workload
+conditions or validate the ordering of the two requested bounds.
