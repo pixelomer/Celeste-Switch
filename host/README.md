@@ -346,3 +346,25 @@ runtime log initialization and its documented overwrite behavior still apply;
 the option is not a log backup mechanism and does not rotate Everest's own
 logs or history. Preserve existing logs before a run and keep captures outside
 source history.
+
+## GC region reservation
+
+--gc-region-mib optionally selects the upstream DOTNET_GCRegionRange setting
+in MiB. Zero, the default, leaves the runtime's existing configuration alone.
+A nonzero value must be at least 64 MiB, a multiple of 64 MiB and no larger
+than --managed-pool-mib; the builder rejects invalid values. The selection is
+compiled into CELESTE_GC_REGION_MIB and recorded in the generated manifest.
+
+Before setting the environment option, native setup additionally requires
+at least 64 MiB of the actual nxvm virtual arena to remain outside the selected
+GC region. It aborts if that guard or setenv fails. The byte value is formatted
+as hexadecimal for the upstream configuration parser, then reported at startup.
+
+Physical backing and virtual reservation are separate limits. With no explicit
+region override, the selected runtime caps its computed default region range
+at half the shared virtual arena; other GC settings also affect that default.
+Increasing physical backing alone does not enlarge the virtual arena or
+automatically remove that cap. Leave room for GC bookkeeping and other shared
+PAL/BCL users, and assess total native/managed usage rather than treating an
+accepted option value as proof that a workload will fit. This option does not
+change allocator reservation semantics or mod behavior.

@@ -55,6 +55,19 @@ int HostConfigureApplication(void) {
         return 1;
     }
     printf("HOST managed pool=%zu virtual arena=%zu\n", managed_pool, nxvm_virtual_capacity());
+#if CELESTE_GC_REGION_MIB
+    // Use the upstream GC tuning option, without changing reservation semantics.
+    // Keep room in the shared arena for GC bookkeeping and other PAL/BCL users.
+    const size_t gc_region = (size_t)CELESTE_GC_REGION_MIB << 20;
+    if (gc_region + ((size_t)64 << 20) > nxvm_virtual_capacity()) {
+        fprintf(stderr, "HOST GC region leaves insufficient shared virtual space\n");
+        return 1;
+    }
+    char region_config[32];
+    snprintf(region_config, sizeof(region_config), "%zx", gc_region);
+    if (setenv("DOTNET_GCRegionRange", region_config, 1) != 0) return 1;
+    printf("HOST configured GC region=%zu\n", gc_region);
+#endif
     if (chdir("sdmc:/switch/celeste-pc") != 0) { perror("Celeste working directory"); return 1; }
     if (mkdir("sdmc:/switch/celeste-pc/tmp", 0777) != 0 && errno != EEXIST) {
         perror("Celeste temporary directory"); return 1;
