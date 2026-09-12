@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseAppHost>false</UseAppHost>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Celeste" HintPath="$(PreparedInstall)/Celeste.dll" Private="false" />
+    <Reference Include="FNA" HintPath="$(PreparedInstall)/FNA.dll" Private="false" />
+    <Reference Include="MonoMod.RuntimeDetour" HintPath="$(PreparedInstall)/MonoMod.RuntimeDetour.dll" Private="false" />
+  </ItemGroup>
+</Project>
