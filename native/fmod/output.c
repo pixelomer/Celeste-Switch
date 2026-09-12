@@ -43,6 +43,9 @@ static FMOD_RESULT F_CALL info(FMOD_OUTPUT_STATE *s,int id,char *name,int len,FM
 static FMOD_RESULT F_CALL close_output(FMOD_OUTPUT_STATE *s) {
     Output *o=s->plugindata;
     if(!o)return FMOD_OK;
+    probe_log("FMOD_OUTPUT close mixed=%llu released=%llu nonzero=%llu timeouts=%llu error=%d",
+        (unsigned long long)CelesteAudioMixed(), (unsigned long long)CelesteAudioReleased(),
+        (unsigned long long)CelesteAudioNonzero(), (unsigned long long)CelesteAudioTimeouts(), CelesteAudioError());
     audoutExit();
     for(unsigned i=0;i<BUFFERS;i++)free(o->buffers[i].buffer);
     free(o);s->plugindata=NULL;

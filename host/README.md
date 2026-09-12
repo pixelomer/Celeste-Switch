@@ -154,3 +154,48 @@ Full game/mod compatibility, unsupported desktop services and lifecycle
 behavior must be assessed independently. Normal Mods/ loading remains the
 interface. Keep generated logs, binaries, game data
 and source-build manifests outside Git and release assets.
+
+## Standard Everest inputs
+
+First run the [standard preparation tool](../tools/prepare-everest/README.md)
+to produce artifacts/everest-prepared/install with paired patched Celeste/FNA,
+MMHOOK_Celeste.dll, Celeste.Mod.mm.dll and the remaining managed dependencies.
+Then build the [paired Lua archive](../native/lua/README.md) as artifacts/lua.
+
+Use the same native/runtime, converted content assembly, source FNA, SDL and
+MonoMod inputs described above, but select the standard installer's outputs:
+
+```sh
+python3 host/build.py \
+  --runtime third_party/host-runtime --runtime-baseline third_party/host-runtime \
+  --graphics-build artifacts/fna-graphics --fmod-build artifacts/fmod-11014 \
+  --celeste artifacts/everest-prepared/install/Celeste.dll \
+  --content-assembly artifacts/coreified/Celeste.Content.dll \
+  --prepared-fna artifacts/everest-prepared/install/FNA.dll \
+  --fna third_party/host-fna --sdl-build artifacts/host-sdl \
+  --monomod third_party/host-everest/external/MonoMod \
+  --dependency-directory artifacts/everest-prepared/install \
+  --lua-build artifacts/lua --output artifacts/everest-host
+```
+
+The output directory must be new. --prepared-fna bypasses rebuilding FNA,
+but --fna remains required to record its source revision. The selected patched
+FNA must come from the same ordinary installer invocation as Celeste.dll.
+
+The host explicitly stages MMHOOK_Celeste.dll and Celeste.Mod.mm.dll.
+MMHOOK participates in managed dependency traversal. Celeste.Mod.mm is Cecil
+input for runtime rule extraction; its unused Steam build-reference graph is
+not staged as executable dependencies. This does not supply a Steam SDK or
+make unsupported native services available.
+
+--lua-build adds the archive only after its digest matches manifest.json and
+retains the recorded Lua exports. The native resolver recognizes lua54.
+The asynchronous FMOD output reports its current counters on close without
+changing mixer ownership, timing or error handling.
+
+Keep vanilla and modded local outputs separate. Both host variants currently
+use /switch/celeste-pc, so back up its existing files and saves before switching
+the selected installation. Install the complete generated managed directory,
+not a mixture of framework or game assemblies from different builds.
+Additional ordinary mod compatibility and unsupported OS/native services
+remain subject to the project input and compatibility contracts.

@@ -5,8 +5,11 @@ import dnfile
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__)
 for name in ('runtime','runtime-baseline','graphics-build','fmod-build','celeste','content-assembly','fna','sdl-build','monomod','dependency-directory','output'):p.add_argument('--'+name,type=Path,required=True)
+p.add_argument('--prepared-fna',type=Path,help='Use the paired FNA already patched by the standard Everest installer')
+p.add_argument('--lua-build',type=Path,help='Pinned native Lua build for Everest')
 a=p.parse_args()
-for key,value in vars(a).items():setattr(a,key,value.resolve())
+for key,value in vars(a).items():
+ if value is not None:setattr(a,key,value.resolve())
 a.output.mkdir(parents=True,exist_ok=False);out=a.output
 here=Path(__file__).resolve().parent;platform=here.parent/'native/fmod'
 snapshot=out/'sources';snapshot.mkdir()
@@ -27,8 +30,13 @@ for name,digest in graphics['native_libraries'].items():
 sdl=json.loads((a.sdl_build/'manifest.json').read_text())
 if sha(a.sdl_build/'libSDL2.a')!=sdl['archive_sha256']:raise SystemExit('Changed SDL input')
 archives=[a.sdl_build/'libSDL2.a' if path.name=='libSDL2.a' else path for path in archives]
-subprocess.run(['dotnet','build',str(a.fna/'FNA.Core.csproj'),'-c','Release','-p:TargetFrameworks=net8.0','-p:ArtifactsPath='+str(out/'fna')],check=True)
-fna=out/'fna/bin/FNA.Core/release_net8.0/FNA.dll'
+if not a.prepared_fna:subprocess.run(['dotnet','build',str(a.fna/'FNA.Core.csproj'),'-c','Release','-p:TargetFrameworks=net8.0','-p:ArtifactsPath='+str(out/'fna')],check=True)
+fna=a.prepared_fna or out/'fna/bin/FNA.Core/release_net8.0/FNA.dll'
+lua=None
+if a.lua_build:
+ lua=json.loads((a.lua_build/'manifest.json').read_text())
+ if sha(a.lua_build/'liblua54.a')!=lua['archive_sha256']:raise SystemExit('Changed Lua archive')
+ archives.append(a.lua_build/'liblua54.a')
 for name in ('so_util.c','so_util.h','imports.inc'):shutil.copy2(a.fmod_build/name,snapshot/name)
 for path in (a.monomod/'native/libnx/exception-helper.c',a.monomod/'src/MonoMod.Core/Platforms/Architectures/arm64/exhelper_linux_macos_arm64.S',a.monomod/'src/MonoMod.Core/Platforms/Architectures/arm64/asm.i'):shutil.copy2(path,snapshot/path.name)
 sdk=None
@@ -49,8 +57,18 @@ cmd=['python3',a.runtime/'src/coreclr/pal/tests/libnx/host/build.py','--probe','
 # framework. Coreification adds runtime shims (NETCoreifier), not only IL edits.
 framework=a.runtime_baseline/'artifacts/bin/runtime/net10.0-libnx-Release-arm64'
 known={path.stem for path in framework.glob('*.dll')} | {'System.Private.CoreLib'}
-pending=[fna,a.celeste,a.content_assembly];known.update(path.stem for path in pending)
+pending=[fna,a.celeste,a.content_assembly]
 dependencies=[]
+if a.prepared_fna:
+ # Standard Everest installer support read dynamically by relinking/HookGen.
+ for name in ('MMHOOK_Celeste.dll','Celeste.Mod.mm.dll'):
+  path=a.dependency_directory/name
+  if not path.is_file():raise SystemExit('Missing Everest support '+name)
+  dependencies.append(path)
+  # Everest reads the patch assembly with Cecil and extracts runtime rules.
+  # It does not execute its Steam build/reference-only dependency graph.
+  if name != 'Celeste.Mod.mm.dll':pending.append(path)
+known.update(path.stem for path in pending)
 while pending:
  path=pending.pop()
  assembly=dnfile.dnPE(str(path),fast_load=False)
@@ -68,8 +86,10 @@ for obj in objects:cmd+=['--native-object',obj]
 for archive in archives:cmd+=['--native-library',archive]
 for symbol in json.loads((a.graphics_build/'imports.json').read_text())['resident_exports']:cmd+=['--export-symbol',symbol]
 for symbol in ('coreclr_libnx_get_jit','coreclr_libnx_jit_get_compile_callback','coreclr_libnx_jit_set_compile_callback','coreclr_libnx_memory_granularity','coreclr_libnx_memory_allocate','coreclr_libnx_memory_free','coreclr_libnx_memory_readable','coreclr_libnx_memory_patch','monomod_libnx_exception_helper'):cmd+=['--export-symbol',symbol]
+if lua:
+ for symbol in lua['exports']:cmd+=['--export-symbol',symbol]
 run(cmd);shutil.copy2(out/'host/coreclr-host-probe.nro',out/'celeste-pc.nro')
-manifest={'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(a.graphics_build/'host/build-manifest.json'),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
+manifest={'prepared_fna_sha256':sha(fna),'lua_manifest_sha256':sha(a.lua_build/'manifest.json') if lua else None,'managed_dependencies':{path.name:sha(path) for path in dependencies},'native_sources':{p.name:sha(p) for p in snapshot.iterdir() if p.is_file()},'fmod_input_manifest_sha256':sha(a.fmod_build/'build-manifest.json'),'graphics_input_manifest_sha256':sha(a.graphics_build/'host/build-manifest.json'),'celeste_sha256':sha(a.celeste),'content_assembly_sha256':sha(a.content_assembly),'sdl_manifest_sha256':sha(a.sdl_build/'manifest.json'),'monomod_revision':subprocess.check_output(['git','-C',str(a.monomod),'rev-parse','HEAD'],text=True).strip(),'fna_revision':subprocess.check_output(['git','-C',str(a.fna),'rev-parse','HEAD'],text=True).strip(),'libnx_sha256':sha(sdk/'lib/libnx.a'),'commands':commands,'nro_sha256':sha(out/'celeste-pc.nro')}
 payload=out/'host/managed/lib';payload.mkdir()
 for name in ('libfmod.so','libfmodstudio.so'):shutil.copy2(a.fmod_build/'sdk/android'/name,payload/name)
 (out/'integration-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')

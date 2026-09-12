@@ -18,7 +18,7 @@ void* HostResolvePInvoke(const char *library,const char *entry){
 #undef EXPORT
     }
     void *audio=CelesteFmodResolve(library,entry);if(audio)return audio;
-    if(!library||!entry||(strcmp(library,"SDL2")&&strcmp(library,"FNA3D")))return 0;
+    if(!library||!entry||(strcmp(library,"SDL2")&&strcmp(library,"FNA3D")&&strcmp(library,"lua54")))return 0;
     void *module=PAL_LoadLibraryDirect(0);if(!module)return 0;
     void *result=PAL_GetProcAddressDirect(module,entry);PAL_FreeLibraryDirect(module);return result;
 }
