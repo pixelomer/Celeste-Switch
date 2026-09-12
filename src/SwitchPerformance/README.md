@@ -162,3 +162,26 @@ but remain inclusive method durations with observer overhead. They do not
 measure isolated GPU execution, change sorting/batching, skip simulation updates
 or prune other mods' hooks. Preserve sprite order, texture lifetime and effect
 semantics when assessing any future rendering change.
+
+## Opt-in configuration and rollback
+
+For checksum buffering without frame instrumentation, use this explicit example:
+
+```yaml
+Diagnostics: false
+DetailedEntities: false
+BufferChecksums: true
+```
+
+This is an opt-in configuration, not the source defaults or a compatibility
+certification. Keep the original mod profile, settings and saves intact.
+Disabling BufferChecksums restores the original requested read size. Disabling
+the diagnostic ZIP while the game is closed removes its hooks on the next launch.
+Neither action requires clearing relink/audio caches or restoring saves.
+Preserve the selected ZIP/settings when comparing behavior.
+
+To diagnose installation messages, set Everest's SwitchPerformance log-tag
+threshold to Verbose through its normal logging configuration. Keep detailed
+per-submission timers disabled outside deliberate measurement. Additional maps,
+mod/helper features, relink and audio-cache states need separate assessment;
+checksum behavior alone does not establish a frame-rate improvement.
