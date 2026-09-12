@@ -25,17 +25,18 @@ Git and preserve previous outputs before rebuilding.
 
 The sole argument is a JSON object mapping decimal byte lengths to uppercase
 big-endian standard XXH64 hex, with seed zero. Input byte i is
-(i*73 + i/251) & 255. A minimal example is:
-
-```json
-{"32": "1187F566D6E92D0F"}
-```
-
-Save that object as artifacts/checksum-vectors.json, then execute separately:
+(i*73 + i/251) & 255. The committed
+[expected.json](expected.json) provides thirteen standard XXH64 vectors for
+that byte rule, including stripe and buffer boundaries. They are deterministic
+fixture inputs, not captured game/build identities. Execute separately:
 
 ```sh
-dotnet artifacts/checksum-fixture/ChecksumFixture.dll artifacts/checksum-vectors.json
+dotnet artifacts/checksum-fixture/ChecksumFixture.dll tests/performance-checksum/expected.json
 ```
+
+Thirteen lengths times thirteen checks give 169 assertions when every check
+completes. The short-input oracle entries remain reference data even though
+their direct comparison is intentionally skipped.
 
 For each input, the fixture compares the baseline ComputeHash(Stream) digest
 with the reference for lengths at least 32. It then compares twelve alternate
