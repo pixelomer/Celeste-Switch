@@ -4,7 +4,8 @@
 
 Use Linux x86-64 with Python 3.12+, Git, Bash, GCC/G++, Clang/LLVM, CMake, Ninja,
 GNU make, patch, pkg-config, Meson, Bison, Flex, binutils, a JDK (JNI headers),
-bubblewrap and util-linux. Use .NET SDK 10.0.111 under /usr for the managed
+bubblewrap, util-linux and Mono's `sn` strong-name tool (Debian's `mono-devel`
+package) for NLua signing. Use .NET SDK 10 under /usr for the managed
 dependency builds and isolated installer. The runtime also
 bootstraps its own source-pinned SDK and matching framework. NuGet and source
 archive access are needed on the first build.
@@ -24,6 +25,77 @@ networkless game-preparation step. Root invocation drops installer privileges.
 
 Plan for a large .NET source/build tree and a sustained native/managed build.
 `--jobs N` controls native build concurrency; default is at most eight jobs.
+
+## Docker
+
+The `Dockerfile` supplies the Linux x86-64 host tools, devkitA64 15.2.0,
+Python 3.12, and .NET SDKs 9 and 10 from digest-pinned images. The runtime still
+builds from its locked source revision with its own selected SDK. Only host
+package installation uses root during image construction; the image's default
+`builder` user is non-root. Match that user's IDs to the owner of your checkout:
+
+```sh
+docker build --platform linux/amd64 \
+  --build-arg BUILDER_UID="$(id -u)" \
+  --build-arg BUILDER_GID="$(id -g)" \
+  -t celeste-switch-builder .
+```
+
+The standard installer runs inside a separate, networkless bubblewrap sandbox.
+Docker's default seccomp profile blocks the nested namespace setup. Download
+the [containers-common profile](https://github.com/podman-container-tools/container-libs/blob/078c746c8158d7bdb98377c91ee8ecdf5639fbf2/common/pkg/seccomp/seccomp.json)
+at its pinned source revision into an ignored directory:
+
+```sh
+mkdir -p artifacts/docker
+curl --fail --location \
+  https://raw.githubusercontent.com/podman-container-tools/container-libs/078c746c8158d7bdb98377c91ee8ecdf5639fbf2/common/pkg/seccomp/seccomp.json \
+  --output artifacts/docker/seccomp.json
+echo '2598b3b98e6970f37f917e210202fa8976aefcd99abf8955803a6e35bba17eb4  artifacts/docker/seccomp.json' | sha256sum --check
+docker run --rm --platform linux/amd64 \
+  --user "$(id -u):$(id -g)" \
+  --cap-drop ALL --security-opt no-new-privileges \
+  --security-opt seccomp=artifacts/docker/seccomp.json \
+  --volume "$PWD:/work" \
+  --volume /path/to/original-inputs:/inputs:ro \
+  celeste-switch-builder \
+  --pc-zip /inputs/celeste-linux.zip \
+  --fmod-android /inputs/fmodstudioapi11014android.tar.gz --jobs 4
+```
+
+The host must permit unprivileged user namespaces. Keep the non-root user,
+dropped capabilities and no-new-privileges setting together with this profile;
+do not substitute `--privileged` or disable the installer sandbox. On hosts with
+additional container filesystem policies, grant access only to these explicit
+mounts according to the host's container configuration.
+
+Use a fresh source checkout and an empty `artifacts/build/` for a clean build.
+Only the original game ZIP and matching FMOD archive belong in the read-only
+input directory. Source, input archives, NuGet caches and build outputs are not
+copied into image layers; outputs remain in the mounted checkout. Do not mount
+a prebuilt runtime or another project's generated dependency trees for a fresh
+source build. Compiling and packaging do not establish target runtime behavior.
+
+### Optional Git mirrors
+
+Git credentials can stay on the host. Prepare bare source mirrors containing
+the exact locked commits, and a JSON mapping from each canonical repository URL
+to its container-visible mirror path, for example:
+
+```json
+{
+  "https://github.com/pixelomer/dotnet-switch.git": "/sources/dotnet-switch.git",
+  "https://github.com/pixelomer/dotnet-runtime.git": "/sources/dotnet-runtime.git"
+}
+```
+
+Include all desired fork mirrors, including transitive gitlink dependencies.
+Mount their directory read-only at `/sources` and append
+`--source-mirrors /sources/mirrors.json` to the build command. Mirror mappings
+are optional local configuration; do not commit them or credentials. Mirrors
+supply Git objects only: all selected runtime and native libraries are compiled
+in the fresh build directory. Public archives and NuGet packages still require
+network access.
 
 ## Inputs and command
 

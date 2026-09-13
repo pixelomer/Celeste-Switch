@@ -1,10 +1,10 @@
 {
   "schema": 1,
-  "runtime_revision": "b115efe03395844de50f643c96ea99f30a2ee11c",
+  "runtime_revision": "4a1e59e06fba330166a070eab784cc37a3232f6a",
   "repositories": {
     "dotnet-switch": {
       "url": "https://github.com/pixelomer/dotnet-switch.git",
-      "revision": "8eaaca7a2c1e10455bf52f64423c00bd16a736f0"
+      "revision": "7ac67aa413cd368e6d8506ff7af5057fdbf897a4"
     },
     "FNA": {
       "url": "https://github.com/pixelomer/FNA.git",
