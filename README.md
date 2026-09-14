@@ -1,5 +1,19 @@
 # Celeste with Everest for Nintendo Switch
 
+> [!IMPORTANT]
+> AI assistance was heavily used for this port. Most of the work was done by
+> GPT-6 Astra. The produced code was not audited or verified by a human beyond
+> running the compiled NRO on a real Nintendo Switch. Human maintainability or
+> readability was not a goal for this project.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
 Run the PC FNA version of Celeste and ordinary Everest mods as Horizon homebrew.
 This port uses [CoreCLR/RyuJIT .NET 10](https://github.com/pixelomer/dotnet-runtime)
 through [dotnet-switch](https://github.com/pixelomer/dotnet-switch). Mods load
